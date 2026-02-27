@@ -159,8 +159,8 @@ function injectButton(){
 
     if(document.getElementById("stoat-monaco-quickcss"))return;
 
-    const baseBtn=document.getElementById("stoat-fake-quickcss");
-    if(!baseBtn)return;
+    const removeFontBtn=document.getElementById("stoat-fake-removefont");
+    if(!removeFontBtn)return;
 
     const monacoBtn=appearanceBtn.cloneNode(true);
     monacoBtn.id="stoat-monaco-quickcss";
@@ -174,7 +174,7 @@ function injectButton(){
 
     monacoBtn.addEventListener("click",openMonacoPanel);
 
-    baseBtn.parentElement.insertBefore(monacoBtn,baseBtn.nextSibling);
+    removeFontBtn.parentElement.insertBefore(monacoBtn,removeFontBtn.nextSibling);
 }
 
 function waitForBody(callback){
@@ -195,4 +195,4 @@ waitForBody(()=>{
 
 preloadMonaco();
 
-})();Q
+})();
