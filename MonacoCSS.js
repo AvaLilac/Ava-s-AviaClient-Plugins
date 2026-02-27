@@ -43,6 +43,9 @@ async function openMonacoPanel(){
 
     await preloadMonaco();
 
+    const oldPanel=document.getElementById("avia-quickcss-panel");
+    if(oldPanel)oldPanel.remove();
+
     let panel=document.getElementById("avia-monaco-panel");
     if(panel){
         panel.style.display=panel.style.display==="none"?"flex":"none";
@@ -58,15 +61,14 @@ async function openMonacoPanel(){
         right:"24px",
         width:"650px",
         height:"420px",
-        background:"var(--md-sys-color-surface,#1e1e1e)",
+        background:"var(--md-sys-color-surface,#ffffff)",
         borderRadius:"16px",
         boxShadow:"0 8px 28px rgba(0,0,0,0.35)",
         zIndex:"999999",
         display:"flex",
         flexDirection:"column",
         overflow:"hidden",
-        border:"1px solid rgba(255,255,255,0.08)",
-        backdropFilter:"blur(12px)"
+        border:"1px solid rgba(0,0,0,0.08)"
     });
 
     const header=document.createElement("div");
@@ -76,10 +78,10 @@ async function openMonacoPanel(){
         fontWeight:"600",
         fontSize:"14px",
         letterSpacing:"0.3px",
-        background:"var(--md-sys-color-surface-container,rgba(255,255,255,0.04))",
-        borderBottom:"1px solid rgba(255,255,255,0.08)",
+        background:"rgba(0,0,0,0.04)",
+        borderBottom:"1px solid rgba(0,0,0,0.08)",
         cursor:"move",
-        color:"#fff"
+        color:"#000"
     });
 
     const closeBtn=document.createElement("div");
@@ -89,11 +91,11 @@ async function openMonacoPanel(){
         top:"12px",
         right:"16px",
         cursor:"pointer",
-        opacity:"0.7",
-        color:"#fff"
+        opacity:"0.6",
+        color:"#000"
     });
     closeBtn.onmouseenter=()=>closeBtn.style.opacity="1";
-    closeBtn.onmouseleave=()=>closeBtn.style.opacity="0.7";
+    closeBtn.onmouseleave=()=>closeBtn.style.opacity="0.6";
     closeBtn.onclick=()=>panel.style.display="none";
 
     const editorContainer=document.createElement("div");
@@ -107,7 +109,7 @@ async function openMonacoPanel(){
     const editor=monaco.editor.create(editorContainer,{
         value:localStorage.getItem("avia_quickcss")||"",
         language:"css",
-        theme:"vs-dark",
+        theme:"vs",
         automaticLayout:true,
         minimap:{enabled:false},
         fontSize:13,
@@ -159,9 +161,6 @@ function injectButton(){
 
     if(document.getElementById("stoat-monaco-quickcss"))return;
 
-    const baseBtn=document.getElementById("stoat-fake-quickcss");
-    if(!baseBtn)return;
-
     const monacoBtn=appearanceBtn.cloneNode(true);
     monacoBtn.id="stoat-monaco-quickcss";
 
@@ -174,7 +173,7 @@ function injectButton(){
 
     monacoBtn.addEventListener("click",openMonacoPanel);
 
-    baseBtn.parentElement.insertBefore(monacoBtn,baseBtn.nextSibling);
+    appearanceBtn.parentElement.insertBefore(monacoBtn,appearanceBtn.nextSibling);
 }
 
 function waitForBody(callback){
