@@ -1,7 +1,7 @@
 (function(){
 
-if(window.__AVIA_MONACO_OVERRIDE__)return;
-window.__AVIA_MONACO_OVERRIDE__=true;
+if(window.__AVIA_MONACO_CLONE__)return;
+window.__AVIA_MONACO_CLONE__=true;
 
 function preloadMonaco(){
     return new Promise(resolve=>{
@@ -18,15 +18,39 @@ function preloadMonaco(){
     });
 }
 
+function setIcon(button){
+    const oldSvg=button.querySelector("svg");
+    if(oldSvg)oldSvg.remove();
+
+    const pathData="M8.7 16.3L4.4 12l4.3-4.3 1.4 1.4L7.2 12l2.9 2.9-1.4 1.4zm6.6 0l-1.4-1.4L16.8 12l-2.9-2.9 1.4-1.4L19.6 12l-4.3 4.3z";
+
+    const svgNS="http://www.w3.org/2000/svg";
+    const svg=document.createElementNS(svgNS,"svg");
+    svg.setAttribute("viewBox","0 0 24 24");
+    svg.setAttribute("width","20");
+    svg.setAttribute("height","20");
+    svg.setAttribute("fill","currentColor");
+    svg.style.marginRight="8px";
+
+    const path=document.createElementNS(svgNS,"path");
+    path.setAttribute("d",pathData);
+    svg.appendChild(path);
+
+    button.insertBefore(svg,button.firstChild);
+}
+
 async function openMonacoPanel(){
 
     await preloadMonaco();
 
-    const old=document.getElementById("avia-quickcss-panel");
-    if(old)old.remove();
+    let panel=document.getElementById("avia-monaco-panel");
+    if(panel){
+        panel.style.display=panel.style.display==="none"?"flex":"none";
+        return;
+    }
 
-    const panel=document.createElement("div");
-    panel.id="avia-quickcss-panel";
+    panel=document.createElement("div");
+    panel.id="avia-monaco-panel";
 
     Object.assign(panel.style,{
         position:"fixed",
@@ -46,11 +70,12 @@ async function openMonacoPanel(){
     });
 
     const header=document.createElement("div");
-    header.textContent="QuickCSS";
+    header.textContent="Monaco QuickCSS";
     Object.assign(header.style,{
         padding:"14px 16px",
         fontWeight:"600",
         fontSize:"14px",
+        letterSpacing:"0.3px",
         background:"var(--md-sys-color-surface-container,rgba(255,255,255,0.04))",
         borderBottom:"1px solid rgba(255,255,255,0.08)",
         cursor:"move",
@@ -67,7 +92,9 @@ async function openMonacoPanel(){
         opacity:"0.7",
         color:"#fff"
     });
-    closeBtn.onclick=()=>panel.remove();
+    closeBtn.onmouseenter=()=>closeBtn.style.opacity="1";
+    closeBtn.onmouseleave=()=>closeBtn.style.opacity="0.7";
+    closeBtn.onclick=()=>panel.style.display="none";
 
     const editorContainer=document.createElement("div");
     editorContainer.style.flex="1";
@@ -84,7 +111,6 @@ async function openMonacoPanel(){
         automaticLayout:true,
         minimap:{enabled:false},
         fontSize:13,
-        fontFamily:"monospace",
         scrollBeyondLastLine:false,
         wordWrap:"on"
     });
@@ -92,6 +118,7 @@ async function openMonacoPanel(){
     editor.onDidChangeModelContent(()=>{
         const value=editor.getValue();
         localStorage.setItem("avia_quickcss",value);
+
         let styleTag=document.getElementById("avia-quickcss-style");
         if(!styleTag){
             styleTag=document.createElement("style");
@@ -124,20 +151,48 @@ async function openMonacoPanel(){
     });
 }
 
-function hijackButton(){
-    const btn=document.getElementById("stoat-fake-quickcss");
-    if(!btn){
-        requestAnimationFrame(hijackButton);
-        return;
-    }
-    btn.onclick=e=>{
-        e.stopImmediatePropagation();
-        e.preventDefault();
-        openMonacoPanel();
-    };
+function injectButton(){
+
+    const appearanceBtn=Array.from(document.querySelectorAll("a"))
+        .find(a=>a.textContent.trim()==="Appearance");
+    if(!appearanceBtn)return;
+
+    if(document.getElementById("stoat-monaco-quickcss"))return;
+
+    const baseBtn=document.getElementById("stoat-fake-quickcss");
+    if(!baseBtn)return;
+
+    const monacoBtn=appearanceBtn.cloneNode(true);
+    monacoBtn.id="stoat-monaco-quickcss";
+
+    const textNode=Array.from(monacoBtn.querySelectorAll("div"))
+        .find(d=>d.children.length===0);
+
+    if(textNode)textNode.textContent="(Avia) Monaco QuickCSS";
+
+    setIcon(monacoBtn);
+
+    monacoBtn.addEventListener("click",openMonacoPanel);
+
+    baseBtn.parentElement.insertBefore(monacoBtn,baseBtn.nextSibling);
 }
 
+function waitForBody(callback){
+    if(document.body)callback();
+    else new MutationObserver((obs)=>{
+        if(document.body){
+            obs.disconnect();
+            callback();
+        }
+    }).observe(document.documentElement,{childList:true});
+}
+
+waitForBody(()=>{
+    const observer=new MutationObserver(()=>injectButton());
+    observer.observe(document.body,{childList:true,subtree:true});
+    injectButton();
+});
+
 preloadMonaco();
-hijackButton();
 
 })();
