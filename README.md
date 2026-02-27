@@ -7,7 +7,7 @@ A collection of custom plugins for Avia.
 ## ✍️ Write Uppercase  
 Auto-capitalizes sentences while you type.  
 
-**Download:**  
+**Link:**  
 https://cdn.jsdelivr.net/gh/AvaLilac/Ava-s-AviaClient-Plugins@refs/heads/main/WriteUpperCase.js
 
 ---
@@ -15,7 +15,16 @@ https://cdn.jsdelivr.net/gh/AvaLilac/Ava-s-AviaClient-Plugins@refs/heads/main/Wr
 ## 🔌 MonacoCSS 
 Enhances Avia’s QuickCSS with the Monaco editor, delivering real syntax highlighting, instant live updates, and a smoother editing experience.
 
-**Download:**  
+**Link:**  
 https://raw.githubusercontent.com/AvaLilac/Ava-s-AviaClient-Plugins/refs/heads/main/QuickCSSPlus.js
 
 ---
+
+## 🔌 ForceApparence 
+Keeps the Appearance label in English so Avia Client settings continue working properly.
+
+**Link:**  
+https://raw.githubusercontent.com/AvaLilac/Ava-s-AviaClient-Plugins/refs/heads/main/ForceApparence.js
+
+---
+
