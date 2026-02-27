@@ -12,10 +12,10 @@ https://cdn.jsdelivr.net/gh/AvaLilac/Ava-s-AviaClient-Plugins@refs/heads/main/Wr
 
 ---
 
-## 🔌 Plugin Name (Unreleased)  
-Unreleased
+## 🔌 MonacoCSS 
+Enhances Avia’s QuickCSS with the Monaco editor, delivering real syntax highlighting, instant live updates, and a smoother editing experience.
 
 **Download:**  
-
+https://cdn.jsdelivr.net/gh/AvaLilac/Ava-s-AviaClient-Plugins@refs/heads/main/MonacoCSS.js
 
 ---
