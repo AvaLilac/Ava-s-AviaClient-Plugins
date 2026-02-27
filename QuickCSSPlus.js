@@ -157,6 +157,9 @@ function injectButton(){
         .find(a=>a.textContent.trim()==="Appearance");
     if(!appearanceBtn)return;
 
+    const oldQuickCss=document.getElementById("stoat-fake-quickcss");
+    if(oldQuickCss) oldQuickCss.remove();
+
     if(document.getElementById("stoat-monaco-quickcss"))return;
 
     const removeFontBtn=document.getElementById("stoat-fake-removefont");
@@ -168,7 +171,7 @@ function injectButton(){
     const textNode=Array.from(monacoBtn.querySelectorAll("div"))
         .find(d=>d.children.length===0);
 
-    if(textNode)textNode.textContent="(Avia) Monaco QuickCSS";
+    if(textNode)textNode.textContent="(Avia) QuickCSS";
 
     setIcon(monacoBtn);
 
