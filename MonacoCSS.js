@@ -18,18 +18,12 @@ function preloadMonaco(){
     });
 }
 
-function removeOriginalPanel(){
-    const old=document.querySelectorAll('[id*="quickcss"],[class*="quickcss"]');
-    old.forEach(el=>el.remove());
-}
-
 async function openMonacoPanel(){
 
     await preloadMonaco();
-    removeOriginalPanel();
 
-    const existing=document.getElementById("avia-quickcss-panel");
-    if(existing)return;
+    const old=document.getElementById("avia-quickcss-panel");
+    if(old)old.remove();
 
     const panel=document.createElement("div");
     panel.id="avia-quickcss-panel";
@@ -43,7 +37,7 @@ async function openMonacoPanel(){
         background:"var(--md-sys-color-surface,#1e1e1e)",
         borderRadius:"16px",
         boxShadow:"0 8px 28px rgba(0,0,0,0.35)",
-        zIndex:"9999999",
+        zIndex:"999999",
         display:"flex",
         flexDirection:"column",
         overflow:"hidden",
@@ -98,7 +92,6 @@ async function openMonacoPanel(){
     editor.onDidChangeModelContent(()=>{
         const value=editor.getValue();
         localStorage.setItem("avia_quickcss",value);
-
         let styleTag=document.getElementById("avia-quickcss-style");
         if(!styleTag){
             styleTag=document.createElement("style");
@@ -131,25 +124,20 @@ async function openMonacoPanel(){
     });
 }
 
-function fullyOverrideButton(){
+function hijackButton(){
     const btn=document.getElementById("stoat-fake-quickcss");
     if(!btn){
-        requestAnimationFrame(fullyOverrideButton);
+        requestAnimationFrame(hijackButton);
         return;
     }
-
-    const newBtn=btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn,btn);
-
-    newBtn.addEventListener("click",e=>{
+    btn.onclick=e=>{
+        e.stopImmediatePropagation();
         e.preventDefault();
-        e.stopPropagation();
-        removeOriginalPanel();
         openMonacoPanel();
-    },true);
+    };
 }
 
 preloadMonaco();
-fullyOverrideButton();
+hijackButton();
 
 })();
