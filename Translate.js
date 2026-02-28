@@ -5,16 +5,19 @@ window.__AVIA_TRANSLATE__ = true;
 
 const STORAGE_LANG = "avia_translate_lang";
 const STORAGE_ENABLED = "avia_translate_enabled";
+const STORAGE_DEFAULT_TOOLBAR = "avia_default_toolbar_lang";
 
 let TARGET_LANG = localStorage.getItem(STORAGE_LANG) || "de";
 let ENABLED = localStorage.getItem(STORAGE_ENABLED) !== "false";
+let DEFAULT_TOOLBAR_LANG = localStorage.getItem(STORAGE_DEFAULT_TOOLBAR) || null;
 
 const originalFetch = window.fetch.bind(window);
 
-async function translateWithDetect(text) {
+async function translateWithDetect(text, forceLang = null) {
     try {
+        const target = forceLang || TARGET_LANG;
         const url =
-            `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${TARGET_LANG}&dt=t&q=${encodeURIComponent(text)}`;
+            `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;
         const res = await originalFetch(url);
         const data = await res.json();
         const detectedLang = data?.[2];
@@ -126,14 +129,12 @@ function toggleTranslatePanel() {
 
     const close = document.createElement("div");
     close.textContent = "✕";
-
     Object.assign(close.style, {
         position: "absolute",
         right: "18px",
         top: "16px",
         cursor: "pointer"
     });
-
     close.onclick = () => panel.style.display = "none";
     header.appendChild(close);
 
@@ -156,7 +157,6 @@ function toggleTranslatePanel() {
         background: "rgba(255,255,255,0.06)",
         color: "#fff"
     });
-
     container.appendChild(search);
 
     const languages = {
@@ -175,6 +175,7 @@ function toggleTranslatePanel() {
 
     function renderLanguages(filter = "") {
         listWrapper.innerHTML = "";
+
         Object.entries(languages)
             .sort((a,b)=>a[1].localeCompare(b[1]))
             .filter(([code,name]) =>
@@ -182,13 +183,17 @@ function toggleTranslatePanel() {
             )
             .forEach(([code, name]) => {
 
+                const row = document.createElement("div");
+                row.style.display = "flex";
+                row.style.alignItems = "center";
+                row.style.marginBottom = "6px";
+
                 const btn = document.createElement("button");
                 btn.textContent = name;
 
                 Object.assign(btn.style, {
-                    width: "100%",
+                    flex: "1",
                     padding: "8px",
-                    marginBottom: "6px",
                     borderRadius: "8px",
                     border: "none",
                     cursor: "pointer",
@@ -204,7 +209,37 @@ function toggleTranslatePanel() {
                     renderLanguages(search.value);
                 };
 
-                listWrapper.appendChild(btn);
+                const defaultBtn = document.createElement("button");
+                defaultBtn.textContent =
+                    DEFAULT_TOOLBAR_LANG === code ? "Default ✓" : "Set Default";
+
+                Object.assign(defaultBtn.style, {
+                    marginLeft: "6px",
+                    padding: "6px 8px",
+                    borderRadius: "6px",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "11px",
+                    background: DEFAULT_TOOLBAR_LANG === code
+                        ? "rgba(0,200,0,0.3)"
+                        : "rgba(255,255,255,0.08)",
+                    color: "#fff"
+                });
+
+                defaultBtn.onclick = () => {
+                    if (DEFAULT_TOOLBAR_LANG === code) {
+                        DEFAULT_TOOLBAR_LANG = null;
+                        localStorage.removeItem(STORAGE_DEFAULT_TOOLBAR);
+                    } else {
+                        DEFAULT_TOOLBAR_LANG = code;
+                        localStorage.setItem(STORAGE_DEFAULT_TOOLBAR, code);
+                    }
+                    renderLanguages(search.value);
+                };
+
+                row.appendChild(btn);
+                row.appendChild(defaultBtn);
+                listWrapper.appendChild(row);
             });
     }
 
@@ -273,7 +308,6 @@ function injectToolbarTranslate() {
             }
 
             const clone = messageWrapper.cloneNode(true);
-
             clone.querySelector(".Toolbar")?.remove();
             clone.querySelectorAll("time").forEach(t => t.remove());
             clone.querySelectorAll("[class*='time'], [class*='timestamp']").forEach(t => t.remove());
@@ -283,7 +317,10 @@ function injectToolbarTranslate() {
             if (!text) return;
 
             btn.style.opacity = "0.4";
-            const result = await translateWithDetect(text);
+
+            const targetLang = DEFAULT_TOOLBAR_LANG || TARGET_LANG;
+            const result = await translateWithDetect(text, targetLang);
+
             btn.style.opacity = "1";
 
             if (!result) return;
