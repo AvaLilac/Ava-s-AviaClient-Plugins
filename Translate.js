@@ -328,7 +328,9 @@ function injectToolbarTranslate() {
 
             if (!result) return;
 
-            const detectedName = languages[result.detectedLang] || result.detectedLang || "Unknown";
+            let detectedCode = (result.detectedLang || "").toLowerCase();
+            if (detectedCode.includes("-")) detectedCode = detectedCode.split("-")[0];
+            const detectedName = languages[detectedCode] || detectedCode || "Unknown";
 
             const block = document.createElement("div");
             block.className = "avia-inline-translation";
