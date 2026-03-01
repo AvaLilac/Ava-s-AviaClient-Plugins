@@ -313,17 +313,10 @@ function injectToolbarTranslate() {
                 return;
             }
 
-            const clone = messageWrapper.cloneNode(true);
-            clone.querySelector(".Toolbar")?.remove();
-            clone.querySelectorAll("time").forEach(t => t.remove());
-            clone.querySelectorAll("[class*='time'], [class*='timestamp']").forEach(t => t.remove());
-            clone.querySelectorAll(".white-space_nowrap.tov_ellipsis").forEach(el => el.remove());
-            clone.querySelectorAll(".material-symbols-outlined").forEach(el => el.remove());
-            clone.querySelectorAll("*").forEach(el => {
-                if (el.textContent.trim() === "(edited)") el.remove();
-            });
+            const messageParagraph = messageWrapper.querySelector('p[class*="[&>code]:flex-sh_0"]');
+            if (!messageParagraph) return;
 
-            const text = clone.innerText.trim();
+            const text = messageParagraph.innerText.trim();
             if (!text) return;
 
             btn.style.opacity = "0.4";
