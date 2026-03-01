@@ -13,6 +13,17 @@ let DEFAULT_TOOLBAR_LANG = localStorage.getItem(STORAGE_DEFAULT_TOOLBAR) || null
 
 const originalFetch = window.fetch.bind(window);
 
+const languages = {
+    af:"Afrikaans", ar:"Arabic", bn:"Bengali", bg:"Bulgarian",
+    zh:"Chinese", hr:"Croatian", cs:"Czech", da:"Danish",
+    nl:"Dutch", en:"English", fi:"Finnish", fr:"French",
+    de:"German", el:"Greek", he:"Hebrew", hi:"Hindi",
+    hu:"Hungarian", id:"Indonesian", it:"Italian", ja:"Japanese",
+    ko:"Korean", no:"Norwegian", pl:"Polish", pt:"Portuguese",
+    ro:"Romanian", ru:"Russian", es:"Spanish", sv:"Swedish",
+    th:"Thai", tr:"Turkish", uk:"Ukrainian", vi:"Vietnamese"
+};
+
 async function translateWithDetect(text, forceLang = null) {
     try {
         const target = forceLang || TARGET_LANG;
@@ -98,6 +109,33 @@ function toggleTranslatePanel() {
         userSelect: "none"
     });
 
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    header.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        const rect = panel.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        panel.style.bottom = "auto";
+        panel.style.right = "auto";
+        panel.style.left = rect.left + "px";
+        panel.style.top = rect.top + "px";
+        document.body.style.userSelect = "none";
+    });
+
+    document.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        panel.style.left = e.clientX - offsetX + "px";
+        panel.style.top = e.clientY - offsetY + "px";
+    });
+
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+        document.body.style.userSelect = "";
+    });
+
     const toggleBtn = document.createElement("div");
 
     Object.assign(toggleBtn.style, {
@@ -159,23 +197,11 @@ function toggleTranslatePanel() {
     });
     container.appendChild(search);
 
-    const languages = {
-        af:"Afrikaans", ar:"Arabic", bn:"Bengali", bg:"Bulgarian",
-        zh:"Chinese", hr:"Croatian", cs:"Czech", da:"Danish",
-        nl:"Dutch", en:"English", fi:"Finnish", fr:"French",
-        de:"German", el:"Greek", he:"Hebrew", hi:"Hindi",
-        hu:"Hungarian", id:"Indonesian", it:"Italian", ja:"Japanese",
-        ko:"Korean", no:"Norwegian", pl:"Polish", pt:"Portuguese",
-        ro:"Romanian", ru:"Russian", es:"Spanish", sv:"Swedish",
-        th:"Thai", tr:"Turkish", uk:"Ukrainian", vi:"Vietnamese"
-    };
-
     const listWrapper = document.createElement("div");
     container.appendChild(listWrapper);
 
     function renderLanguages(filter = "") {
         listWrapper.innerHTML = "";
-
         Object.entries(languages)
             .sort((a,b)=>a[1].localeCompare(b[1]))
             .filter(([code,name]) =>
@@ -252,26 +278,6 @@ function toggleTranslatePanel() {
     panel.appendChild(header);
     panel.appendChild(container);
     document.body.appendChild(panel);
-
-    let isDragging = false;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    header.addEventListener("mousedown", (e) => {
-        isDragging = true;
-        offsetX = e.clientX - panel.offsetLeft;
-        offsetY = e.clientY - panel.offsetTop;
-    });
-
-    document.addEventListener("mouseup", () => isDragging = false);
-
-    document.addEventListener("mousemove", (e) => {
-        if (!isDragging) return;
-        panel.style.left = (e.clientX - offsetX) + "px";
-        panel.style.top = (e.clientY - offsetY) + "px";
-        panel.style.right = "auto";
-        panel.style.bottom = "auto";
-    });
 }
 
 function injectToolbarTranslate() {
@@ -312,6 +318,10 @@ function injectToolbarTranslate() {
             clone.querySelectorAll("time").forEach(t => t.remove());
             clone.querySelectorAll("[class*='time'], [class*='timestamp']").forEach(t => t.remove());
             clone.querySelectorAll(".white-space_nowrap.tov_ellipsis").forEach(el => el.remove());
+            clone.querySelectorAll(".material-symbols-outlined").forEach(el => el.remove());
+            clone.querySelectorAll("*").forEach(el => {
+                if (el.textContent.trim() === "(edited)") el.remove();
+            });
 
             const text = clone.innerText.trim();
             if (!text) return;
@@ -325,9 +335,11 @@ function injectToolbarTranslate() {
 
             if (!result) return;
 
+            const detectedName = languages[result.detectedLang] || result.detectedLang || "Unknown";
+
             const block = document.createElement("div");
             block.className = "avia-inline-translation";
-            block.textContent = result.translated;
+            block.textContent = result.translated + " - Translated from " + detectedName;
 
             block.style.marginTop = "6px";
             block.style.padding = "8px";
