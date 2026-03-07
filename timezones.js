@@ -46,6 +46,18 @@ function applyTimezones() {
 
     document.querySelectorAll("time[datetime]").forEach(el => {
 
+        const text = el.textContent.trim();
+
+        const isMessageTime =
+            text.includes("Today") ||
+            text.includes("Yesterday") ||
+            text.includes(" at ");
+
+        const isDateSeparator =
+            /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(text);
+
+        if (!isMessageTime && !isDateSeparator) return;
+
         const iso = el.getAttribute("datetime");
         if (!iso) return;
 
@@ -207,7 +219,6 @@ function togglePanel() {
         toggleBtn.style.background = ENABLED
             ? "rgba(0,200,0,0.25)"
             : "rgba(200,0,0,0.25)";
-
     }
 
     updateToggleUI();
@@ -224,7 +235,6 @@ function togglePanel() {
         });
 
         applyTimezones();
-
     };
 
     header.appendChild(toggleBtn);
@@ -311,7 +321,6 @@ function togglePanel() {
 
                 render(search.value);
                 applyTimezones();
-
             };
 
             listWrapper.appendChild(btn);
