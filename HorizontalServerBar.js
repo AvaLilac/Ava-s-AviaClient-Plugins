@@ -6,21 +6,21 @@ window.__HORIZONTAL_SERVER_BAR_JS__ = true;
 const TITLEBAR_HEIGHT = 29;
 const SERVERBAR_HEIGHT = 72;
 
-function apply(){
+function applyHorizontalServerBar(){
 
-const serverContainer = document.querySelector(
+const serverBar = document.querySelector(
 ".d_flex.flex-d_column.fill_var\\(--md-sys-color-on-surface\\)"
 );
 
-if(!serverContainer) return;
+if(!serverBar) return;
 
-Object.assign(serverContainer.style,{
+Object.assign(serverBar.style,{
 position:"fixed",
 top:TITLEBAR_HEIGHT+"px",
 left:"0",
 right:"0",
-height:SERVERBAR_HEIGHT+"px",
 width:"100vw",
+height:SERVERBAR_HEIGHT+"px",
 zIndex:"10000",
 display:"flex",
 flexDirection:"row",
@@ -40,10 +40,9 @@ display:"flex",
 flexDirection:"row",
 alignItems:"center",
 overflowX:"auto",
-overflowY:"visible",
-flexGrow:"0",
+overflowY:"hidden",
 height:SERVERBAR_HEIGHT+"px",
-position:"relative"
+flexGrow:"0"
 });
 
 const list = scrollContainer.querySelector('[role="list"]');
@@ -70,28 +69,28 @@ const sidebar = document.querySelector(
 );
 
 if(sidebar){
+
 Object.assign(sidebar.style,{
 position:"relative",
-top:(TITLEBAR_HEIGHT + SERVERBAR_HEIGHT)+"px",
-height:"auto",
-overflow:"visible",
-background:"var(--md-sys-color-surface-container-low)"
+top:"0px"
 });
-}
-
-const header = document.querySelector(
-".gap_10px.flex_0_auto.d_flex.flex-sh_0.p_0_16px.ai_center.fw_600.us_none.ov_hidden.h_48px"
-);
-
-if(header){
-header.style.marginTop = (TITLEBAR_HEIGHT + SERVERBAR_HEIGHT) + "px";
-}
 
 }
 
-apply();
+const rootApp = document.querySelector("body > div");
 
-const observer = new MutationObserver(apply);
+if(rootApp){
+rootApp.style.paddingTop = SERVERBAR_HEIGHT + "px";
+}
+
+}
+
+applyHorizontalServerBar();
+
+const observer = new MutationObserver(()=>{
+applyHorizontalServerBar();
+});
+
 observer.observe(document.body,{
 childList:true,
 subtree:true
