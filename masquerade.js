@@ -1,0 +1,279 @@
+(function () {
+
+if (window.__AVIA_MASQ_PANEL__) return;
+window.__AVIA_MASQ_PANEL__ = true;
+
+const STORAGE_ENABLED = "avia_masq_enabled";
+const STORAGE_LIST = "avia_masq_list";
+
+let ENABLED = localStorage.getItem(STORAGE_ENABLED) !== "false";
+let MASQ_LIST = JSON.parse(localStorage.getItem(STORAGE_LIST) || "[]");
+
+const originalFetch = window.fetch.bind(window);
+
+window.fetch = async function (resource, config = {}) {
+    try {
+        const url = resource?.toString?.() || "";
+        if (
+            ENABLED &&
+            config.method === "POST" &&
+            url.includes("/channels/") &&
+            url.includes("/messages") &&
+            config.body &&
+            typeof config.body === "string" &&
+            MASQ_LIST.length
+        ) {
+            const parsed = JSON.parse(config.body);
+            if (parsed && typeof parsed.content === "string") {
+                const activeMasq = MASQ_LIST.find(m => m.enabled);
+                if (activeMasq) {
+                    parsed.masquerade = {
+                        name: activeMasq.name,
+                        avatar: activeMasq.avatar
+                    };
+                    config = { ...config, body: JSON.stringify(parsed) };
+                }
+            }
+        }
+    } catch (e) { console.warn("Masq panel fetch error", e); }
+    return originalFetch(resource, config);
+};
+
+function toggleMasqPanel() {
+    let panel = document.getElementById("avia-masq-panel");
+
+    if (panel) {
+        panel.style.display = panel.style.display === "none" ? "flex" : "none";
+        return;
+    }
+
+    panel = document.createElement("div");
+    panel.id = "avia-masq-panel";
+
+    Object.assign(panel.style, {
+        position: "fixed",
+        bottom: "40px",
+        right: "40px",
+        width: "380px",
+        height: "500px",
+        background: "#1e1e1e",
+        color: "#fff",
+        borderRadius: "20px",
+        boxShadow: "0 12px 35px rgba(0,0,0,0.45)",
+        zIndex: 999999,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        border: "1px solid rgba(255,255,255,0.08)"
+    });
+
+    const header = document.createElement("div");
+    header.textContent = "Masquerade";
+
+    Object.assign(header.style, {
+        padding: "18px",
+        fontWeight: "600",
+        fontSize: "16px",
+        background: "rgba(255,255,255,0.04)",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        cursor: "move",
+        position: "relative",
+        textAlign: "center",
+        userSelect: "none"
+    });
+
+    let isDragging = false, offsetX = 0, offsetY = 0;
+    header.addEventListener("mousedown", e => {
+        isDragging = true;
+        const rect = panel.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        panel.style.bottom = "auto";
+        panel.style.right = "auto";
+        panel.style.left = rect.left + "px";
+        panel.style.top = rect.top + "px";
+        document.body.style.userSelect = "none";
+    });
+    document.addEventListener("mousemove", e => {
+        if (!isDragging) return;
+        panel.style.left = e.clientX - offsetX + "px";
+        panel.style.top = e.clientY - offsetY + "px";
+    });
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+        document.body.style.userSelect = "";
+    });
+
+    const toggleBtn = document.createElement("div");
+    Object.assign(toggleBtn.style, {
+        position: "absolute",
+        left: "18px",
+        top: "16px",
+        cursor: "pointer",
+        fontSize: "12px",
+        padding: "4px 8px",
+        borderRadius: "8px"
+    });
+    function updateToggleUI() {
+        toggleBtn.textContent = ENABLED ? "ON" : "OFF";
+        toggleBtn.style.background = ENABLED
+            ? "rgba(0,200,0,0.25)"
+            : "rgba(200,0,0,0.25)";
+    }
+    updateToggleUI();
+    toggleBtn.onclick = () => {
+        ENABLED = !ENABLED;
+        localStorage.setItem(STORAGE_ENABLED, ENABLED);
+        updateToggleUI();
+    };
+    header.appendChild(toggleBtn);
+
+    const close = document.createElement("div");
+    close.textContent = "✕";
+    Object.assign(close.style, {
+        position: "absolute",
+        right: "18px",
+        top: "16px",
+        cursor: "pointer"
+    });
+    close.onclick = () => panel.style.display = "none";
+    header.appendChild(close);
+
+    const container = document.createElement("div");
+    Object.assign(container.style, { flex: "1", overflowY: "auto", padding: "18px" });
+
+    const disclaimer = document.createElement("div");
+    disclaimer.textContent = "⚠️ Masquerade only works in servers/groups with permission; it does not work in DMs.";
+    Object.assign(disclaimer.style, { fontSize: "12px", marginBottom: "12px", color: "#ffcc00" });
+    container.appendChild(disclaimer);
+
+    const nameInput = document.createElement("input");
+    nameInput.placeholder = "Masq Name";
+    Object.assign(nameInput.style, { width: "100%", marginBottom: "6px", padding: "6px", borderRadius: "6px", border: "none" });
+
+    const avatarInput = document.createElement("input");
+    avatarInput.placeholder = "Avatar URL";
+    Object.assign(avatarInput.style, { width: "100%", marginBottom: "6px", padding: "6px", borderRadius: "6px", border: "none" });
+
+    const addBtn = document.createElement("button");
+    addBtn.textContent = "Add Masquerade";
+    Object.assign(addBtn.style, { width: "100%", padding: "6px", borderRadius: "6px", marginBottom: "12px", cursor: "pointer" });
+
+    addBtn.onclick = () => {
+        const name = nameInput.value.trim();
+        const avatar = avatarInput.value.trim();
+        if (!name || !avatar) return;
+        const anyActive = MASQ_LIST.some(m => m.enabled);
+        MASQ_LIST.push({ name, avatar, enabled: !anyActive });
+        localStorage.setItem(STORAGE_LIST, JSON.stringify(MASQ_LIST));
+        renderMasqList();
+        nameInput.value = "";
+        avatarInput.value = "";
+    };
+
+    container.appendChild(nameInput);
+    container.appendChild(avatarInput);
+    container.appendChild(addBtn);
+
+    const listWrapper = document.createElement("div");
+    container.appendChild(listWrapper);
+
+    function renderMasqList() {
+        listWrapper.innerHTML = "";
+        MASQ_LIST.forEach((m, i) => {
+            const row = document.createElement("div");
+            Object.assign(row.style, { display: "flex", alignItems: "center", marginBottom: "6px" });
+
+            const btn = document.createElement("button");
+            btn.style.flex = "1";
+            btn.style.padding = "6px";
+            btn.style.borderRadius = "6px";
+            btn.style.border = "none";
+            btn.style.cursor = "pointer";
+            btn.style.display = "flex";
+            btn.style.alignItems = "center";
+            btn.style.gap = "8px";
+            btn.style.position = "relative";
+            btn.style.background = "rgba(255,255,255,0.08)";
+
+            const img = document.createElement("img");
+            img.src = m.avatar;
+            img.style.width = "24px";
+            img.style.height = "24px";
+            img.style.borderRadius = "50%";
+            img.style.objectFit = "cover";
+
+            const nameSpan = document.createElement("span");
+            nameSpan.textContent = m.name;
+            nameSpan.style.flex = "1";
+
+            btn.appendChild(img);
+            btn.appendChild(nameSpan);
+
+            const check = document.createElement("span");
+            check.textContent = "✔";
+            Object.assign(check.style, {
+                position: "absolute",
+                right: "6px",
+                top: "6px",
+                fontSize: "12px",
+                color: m.enabled ? "#0f0" : "transparent",
+                fontWeight: "bold"
+            });
+            btn.appendChild(check);
+
+            btn.onclick = () => {
+                MASQ_LIST.forEach((x, idx) => x.enabled = idx === i);
+                localStorage.setItem(STORAGE_LIST, JSON.stringify(MASQ_LIST));
+                renderMasqList();
+            };
+
+            const delBtn = document.createElement("button");
+            delBtn.textContent = "✕";
+            Object.assign(delBtn.style, { marginLeft: "6px", cursor: "pointer" });
+            delBtn.onclick = () => {
+                MASQ_LIST.splice(i, 1);
+                localStorage.setItem(STORAGE_LIST, JSON.stringify(MASQ_LIST));
+                renderMasqList();
+            };
+
+            row.appendChild(btn);
+            row.appendChild(delBtn);
+            listWrapper.appendChild(row);
+        });
+    }
+
+    renderMasqList();
+
+    panel.appendChild(header);
+    panel.appendChild(container);
+    document.body.appendChild(panel);
+}
+
+function injectSettingsButton() {
+    if (document.getElementById("avia-masq-btn")) return;
+
+    const gifSpan = [...document.querySelectorAll("span.material-symbols-outlined")]
+        .find(s => s.textContent.trim() === "gif");
+    if (!gifSpan) return;
+
+    const wrapper = gifSpan.closest("div.flex-sh_0");
+    if (!wrapper) return;
+
+    const clone = wrapper.cloneNode(true);
+    clone.id = "avia-masq-btn";
+
+    const btn = clone.querySelector("button");
+    btn.onclick = toggleMasqPanel;
+
+    const spanIcon = clone.querySelector("span.material-symbols-outlined");
+    spanIcon.textContent = "face";
+    wrapper.parentElement.insertBefore(clone, wrapper.nextSibling);
+}
+
+new MutationObserver(injectSettingsButton)
+.observe(document.body, { childList: true, subtree: true });
+
+injectSettingsButton();
+
+})();
