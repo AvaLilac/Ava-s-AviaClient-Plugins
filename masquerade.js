@@ -143,7 +143,7 @@ function toggleMasqPanel() {
     Object.assign(container.style, { flex: "1", overflowY: "auto", padding: "18px" });
 
     const disclaimer = document.createElement("div");
-    disclaimer.textContent = "⚠️ Masquerade only works in servers/groups with permission. it does not work in DMs. DMs will work in Fix 0.12.0 once it’s released";
+    disclaimer.textContent = "⚠️ Masquerade only works in servers/groups with permission. Currently does not work in DMs. There has been a fix made, but it's not live yet.";
     Object.assign(disclaimer.style, { fontSize: "12px", marginBottom: "12px", color: "#ffcc00" });
     container.appendChild(disclaimer);
 
