@@ -267,7 +267,11 @@ function injectSettingsButton() {
     btn.onclick = toggleMasqPanel;
 
     const spanIcon = clone.querySelector("span.material-symbols-outlined");
-    spanIcon.textContent = "face";
+
+    spanIcon.textContent = "domino_mask";
+    spanIcon.style.fontVariationSettings = "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24";
+    spanIcon.style.color = "#e3e3e3";
+
     wrapper.parentElement.insertBefore(clone, wrapper.nextSibling);
 }
 
