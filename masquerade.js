@@ -1,107 +1,3 @@
-(function(){
-
-/* --- Impersonate.js --- */
-if(window.__US_BUILDER_IMPERSONATE_JS__){return;}window.__US_BUILDER_IMPERSONATE_JS__=true;
-
-(function () {
-  if (window.__IMPERSONATE__) return;
-  window.__IMPERSONATE__ = true;
-
-  function apply() {
-
-    const UserContextMenu = document.getElementsByClassName('d_flex flex-d_column p_var(--gap-md)_0 ov_hidden bdr_var(--borderRadius-xs) bg_var(--md-sys-color-surface-container) c_var(--md-sys-color-on-surface) fill_var(--md-sys-color-on-surface) bx-sh_0_0_3px_var(--md-sys-color-shadow) us_none UserContextMenu').item(0)
-    if(UserContextMenu){
-      const impersonateButton = document.createElement('div')
-      impersonateButton.id='impersonate'
-      impersonateButton.className = 'd_flex gap_var(--gap-md) ai_center p_var(--gap-md)_var(--gap-lg) [&:hover]:bg_color-mix(in_srgb,_var(--md-sys-color-on-surface)_8%,_transparent) [&_span]:flex-g_1 [&_span]:mt_1px cursor_pointer tt_capitalize'
-      impersonateButton.innerText = 'Impersonate'
-      impersonateButton.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path d="M10.25 13a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0M15 11.75a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5m7 .25c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10M10.66 4.12C12.06 6.44 14.6 8 17.5 8c.46 0 .91-.05 1.34-.12C17.44 5.56 14.9 4 12 4c-.46 0-.91.05-1.34.12M4.42 9.47a8.05 8.05 0 0 0 3.66-4.44 8.05 8.05 0 0 0-3.66 4.44M20 12c0-.78-.12-1.53-.33-2.24-.7.15-1.42.24-2.17.24a10 10 0 0 1-7.76-3.69A10.02 10.02 0 0 1 4 11.86c.01.04 0 .09 0 .14 0 4.41 3.59 8 8 8s8-3.59 8-8"></path></svg><span class="lh_1.25rem fs_0.875rem ls_0.015625rem fw_400">Impersonate</span>
-      `
-
-      const svg = document.createElement('svg')
-      svg.innerHTML = `
-      <path d="M10.25 13a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0M15 11.75a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5m7 .25c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10M10.66 4.12C12.06 6.44 14.6 8 17.5 8c.46 0 .91-.05 1.34-.12C17.44 5.56 14.9 4 12 4c-.46 0-.91.05-1.34.12M4.42 9.47a8.05 8.05 0 0 0 3.66-4.44 8.05 8.05 0 0 0-3.66 4.44M20 12c0-.78-.12-1.53-.33-2.24-.7.15-1.42.24-2.17.24a10 10 0 0 1-7.76-3.69A10.02 10.02 0 0 1 4 11.86c.01.04 0 .09 0 .14 0 4.41 3.59 8 8 8s8-3.59 8-8"></path>
-      `
-      const path = document.createElement('path')
-      path.d='M10.25 13a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0M15 11.75a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5m7 .25c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10M10.66 4.12C12.06 6.44 14.6 8 17.5 8c.46 0 .91-.05 1.34-.12C17.44 5.56 14.9 4 12 4c-.46 0-.91.05-1.34.12M4.42 9.47a8.05 8.05 0 0 0 3.66-4.44 8.05 8.05 0 0 0-3.66 4.44M20 12c0-.78-.12-1.53-.33-2.24-.7.15-1.42.24-2.17.24a10 10 0 0 1-7.76-3.69A10.02 10.02 0 0 1 4 11.86c.01.04 0 .09 0 .14 0 4.41 3.59 8 8 8s8-3.59 8-8'
-
-      const span = document.createElement('span')
-      span.className = 'lh_1.25rem fs_0.875rem ls_0.015625rem fw_400'
-
-      svg.appendChild(path)
-      impersonateButton.appendChild(svg)
-      impersonateButton.appendChild(span)
-      if(!document.getElementById('impersonate')){
-        UserContextMenu.appendChild(impersonateButton)
-      }
-
-      impersonateButton.addEventListener('click',async ()=>{
-          if(impersonateButton.parentElement.parentElement.parentElement.parentElement.children[0].children[0].children[0].children[0].children[0].innerText){
-              let originalavatar = impersonateButton.parentElement.parentElement.parentElement.parentElement.children[0].children[0].children[0].children[0].children[0].children[1].children[0].children[0].children[0].children[0].children[0].src
-              let avatar = impersonateButton.parentElement.parentElement.parentElement.parentElement.children[0].children[0].children[0].children[0].children[0].children[1].children[0].children[0].children[0].children[0].children[0].src+'/original'
-              let displayname = impersonateButton.parentElement.parentElement.parentElement.parentElement.children[0].children[0].children[0].children[0].children[0].innerText
-
-              const res = await fetch(avatar)
-              if(res.ok){
-                avatar = res.url 
-              }else{
-                avatar = originalavatar
-              }
-
-              if(displayname.includes('\n')){
-                  displayname = displayname.substring(0,displayname.indexOf('\n'))
-              }
-
-              if(displayname.includes('#')){
-                  displayname = displayname.substring(0,displayname.indexOf('#'))
-              }
-              const masquerade = {name:displayname,avatar:avatar,enabled:false}
-              const masqueradeList= JSON.parse(localStorage.getItem('avia_masq_list'))||[];
-              const currentMasquerade = masqueradeList.find(m=>m.enabled)
-              currentMasquerade.enabled=false
-              masqueradeList.splice(masqueradeList.indexOf(currentMasquerade),1)
-              masqueradeList.push(currentMasquerade)
-              const test = masqueradeList.find(m=>m.name==masquerade.name)
-              if(!test){
-                  masquerade.enabled=true;
-                  masqueradeList.push(masquerade)  
-              }else{
-                  masqueradeList.splice(masqueradeList.indexOf(test),1)
-                  test.enabled=true
-                  masqueradeList.push(test)
-              }
-              localStorage.setItem('avia_masq_list',JSON.stringify(masqueradeList))
-          }else{
-            window.alert('Impersonating via the right click context menu doesn\'t work!')
-          }
-      });
-    }
-  }
-
-  const observer = new MutationObserver(() => {
-    apply();
-  });
-
-  function init() {
-    apply();
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-    });
-  }
-
-  if (document.body) {
-    init();
-  } else {
-    requestAnimationFrame(init);
-  }
-})();
-
-
-/* --- masquerade.js --- */
-if(window.__US_BUILDER_MASQUERADE_JS__){return;}window.__US_BUILDER_MASQUERADE_JS__=true;
-
 (function () {
 
 if (window.__AVIA_MASQ_PANEL__) return;
@@ -129,7 +25,6 @@ window.fetch = async function (resource, config = {}) {
         ) {
             const parsed = JSON.parse(config.body);
             if (parsed && typeof parsed.content === "string") {
-                MASQ_LIST = JSON.parse(localStorage.getItem(STORAGE_LIST) || "[]");
                 const activeMasq = MASQ_LIST.find(m => m.enabled);
                 if (activeMasq) {
                     parsed.masquerade = {
@@ -285,7 +180,6 @@ function toggleMasqPanel() {
 
     function renderMasqList() {
         listWrapper.innerHTML = "";
-        MASQ_LIST = JSON.parse(localStorage.getItem(STORAGE_LIST) || "[]");
         MASQ_LIST.forEach((m, i) => {
             const row = document.createElement("div");
             Object.assign(row.style, { display: "flex", alignItems: "center", marginBottom: "6px" });
@@ -350,18 +244,6 @@ function toggleMasqPanel() {
     }
 
     renderMasqList();
-    const refreshButton = document.createElement('div')
-    refreshButton.textContent='↺'
-    Object.assign(refreshButton.style,{
-        position:'absolute',
-        right:'36px',
-        top:'16px',
-        cursor:'pointer'
-    });
-    refreshButton.onclick = ()=>{
-        renderMasqList()
-    }
-    header.appendChild(refreshButton)
 
     panel.appendChild(header);
     panel.appendChild(container);
@@ -397,9 +279,5 @@ new MutationObserver(injectSettingsButton)
 .observe(document.body, { childList: true, subtree: true });
 
 injectSettingsButton();
-
-})();
-
-
 
 })();
