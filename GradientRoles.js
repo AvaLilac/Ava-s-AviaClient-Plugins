@@ -384,12 +384,14 @@
   function injectGradientRoleButton() {
     const createBtn = [...document.querySelectorAll("a.pos_relative.cursor_pointer")]
       .find(a => a.innerText.includes("Create Role") && !a.innerText.includes("Gradient"));
-    if (!createBtn || createBtn.dataset.gradientAttached) return;
-    createBtn.dataset.gradientAttached = "true";
+    if (!createBtn) return;
+
+    const parent = createBtn.parentElement;
+    if (parent.querySelector("[data-avia-gradient-btn]")) return;
 
     function makeClone(labelText, subLabelText, mode) {
       const clone = createBtn.cloneNode(true);
-      delete clone.dataset.gradientAttached;
+      clone.dataset.aviaGradientBtn = mode;
       const labelDiv = clone.querySelector("div.flex-g_1 div");
       if (labelDiv) labelDiv.textContent = labelText;
       const subText = clone.querySelector("span");
@@ -405,12 +407,15 @@
     const createClone = makeClone("Create Gradient Role", "Create a role with gradient color", "create");
     const editClone   = makeClone("Edit Role Gradient",   "Change an existing role's gradient",  "edit");
 
-    createBtn.parentElement.insertBefore(createClone, createBtn.nextSibling);
-    createBtn.parentElement.insertBefore(editClone, createClone.nextSibling);
+    parent.insertBefore(createClone, createBtn.nextSibling);
+    parent.insertBefore(editClone, createClone.nextSibling);
   }
 
-  new MutationObserver(injectGradientRoleButton)
-    .observe(document.body, { childList: true, subtree: true });
+  let debounceTimer = null;
+  new MutationObserver(() => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(injectGradientRoleButton, 150);
+  }).observe(document.body, { childList: true, subtree: true });
 
   injectGradientRoleButton();
 })();
