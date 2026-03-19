@@ -1,6 +1,6 @@
 (function () {
-  if (window.__AVIA_GRADIENT_ROLE_BTN__) return;
-  window.__AVIA_GRADIENT_ROLE_BTN__ = true;
+  if (window.__AVIA_GRADIENT_ROLE__) return;
+  window.__AVIA_GRADIENT_ROLE__ = true;
 
   let capturedToken = null;
   const originalFetch = window.fetch.bind(window);
@@ -44,6 +44,13 @@
     );
   }
 
+  async function editRoleGradient(serverId, roleId, gradient) {
+    return await apiReq(
+      `https://api.revolt.chat/servers/${serverId}/roles/${roleId}`,
+      "PATCH", { colour: gradient }
+    );
+  }
+
   let stops = [
     { color: "#ff0000", pos: 0 },
     { color: "#ff00ff", pos: 50 },
@@ -59,7 +66,7 @@
       : `radial-gradient(circle, ${s})`;
   }
 
-  function openDialog(serverId) {
+  function openDialog(mode) {
     if (document.getElementById("avia-gradient-dialog")) return;
 
     stops = [
@@ -69,6 +76,9 @@
     ];
     gType = "linear";
     gAngle = 90;
+
+    const isEdit = mode === "edit";
+    const serverIdFromUrl = window.location.pathname.match(/\/server\/([^/]+)/)?.[1] ?? null;
 
     const backdrop = document.createElement("div");
     backdrop.id = "avia-gradient-dialog";
@@ -95,7 +105,7 @@
     });
 
     const title = document.createElement("span");
-    title.textContent = "Create Gradient Role";
+    title.textContent = isEdit ? "Edit Role Gradient" : "Create Gradient Role";
     Object.assign(title.style, {
       lineHeight: "2rem",
       fontSize: "1.5rem",
@@ -144,9 +154,13 @@
       return { wrap, el };
     }
 
-    const serverIdFromUrl = window.location.pathname.match(/\/server\/([^/]+)/)?.[1] ?? null;
+    const { wrap: nameWrap, el: nameInput } = isEdit
+      ? { wrap: null, el: null }
+      : mkField("Role Name", "Gradient Role", "Gradient Role");
 
-    const { wrap: nameWrap, el: nameInput } = mkField("Role Name", "Gradient Role", "Gradient Role");
+    const { wrap: roleIdWrap, el: roleIdInput } = isEdit
+      ? mkField("Role ID", "Paste role ID here")
+      : { wrap: null, el: null };
 
     const preview = document.createElement("div");
     Object.assign(preview.style, {
@@ -269,7 +283,11 @@
       renderStops(); refresh();
     };
 
-    sub.append(nameWrap, preview, typeRow, stopsList, addStopBtn);
+    if (isEdit) {
+      sub.append(roleIdWrap, preview, typeRow, stopsList, addStopBtn);
+    } else {
+      sub.append(nameWrap, preview, typeRow, stopsList, addStopBtn);
+    }
 
     const btnRow = document.createElement("div");
     Object.assign(btnRow.style, {
@@ -297,51 +315,67 @@
     const closeBtn = mkDialogBtn("Close", false);
     closeBtn.onclick = close;
 
-    const createBtn = mkDialogBtn("Create", true);
-    createBtn.onclick = async () => {
-      if (!capturedToken) {
-        createBtn.textContent = "No token yet!";
-        setTimeout(() => createBtn.textContent = "Create", 2000);
-        return;
-      }
-      const sid = serverIdFromUrl;
-      if (!sid) { createBtn.textContent = "Can't find server ID"; setTimeout(() => createBtn.textContent = "Create", 2000); return; }
-      const name = nameInput.value.trim() || "Gradient Role";
-      createBtn.textContent = "Creating…"; createBtn.disabled = true;
-      Object.assign(createBtn.style, {
+    const actionLabel = isEdit ? "Save" : "Create";
+    const actionBtn = mkDialogBtn(actionLabel, true);
+
+    function setDisabled() {
+      actionBtn.disabled = true;
+      actionBtn.textContent = isEdit ? "Saving…" : "Creating…";
+      Object.assign(actionBtn.style, {
         cursor: "not-allowed",
         color: "color-mix(in srgb, 38% var(--md-sys-color-on-surface), transparent)",
         background: "color-mix(in srgb, 10% var(--md-sys-color-on-surface), transparent)",
       });
-      const res = await createGradientRole(sid, name, buildCSS());
+    }
+
+    function setEnabled() {
+      actionBtn.disabled = false;
+      actionBtn.textContent = actionLabel;
+      Object.assign(actionBtn.style, {
+        cursor: "pointer",
+        color: "var(--md-sys-color-on-primary)",
+        background: "var(--md-sys-color-primary)",
+      });
+    }
+
+    actionBtn.onclick = async () => {
+      if (!capturedToken) {
+        actionBtn.textContent = "No token yet!";
+        setTimeout(setEnabled, 2000);
+        return;
+      }
+      const sid = serverIdFromUrl;
+      if (!sid) {
+        actionBtn.textContent = "Can't find server ID";
+        setTimeout(setEnabled, 2000);
+        return;
+      }
+      setDisabled();
+      let res;
+      if (isEdit) {
+        const rid = roleIdInput.value.trim();
+        if (!rid) { setEnabled(); roleIdInput.focus(); return; }
+        res = await editRoleGradient(sid, rid, buildCSS());
+      } else {
+        res = await createGradientRole(sid, nameInput.value.trim() || "Gradient Role", buildCSS());
+      }
       if (res?.ok) {
         close();
       } else {
-        createBtn.disabled = false;
-        createBtn.textContent = "Failed";
-        Object.assign(createBtn.style, {
-          cursor: "pointer",
-          color: "var(--md-sys-color-on-primary)",
-          background: "var(--md-sys-color-primary)",
-        });
-        console.error("Gradient role error:", res);
-        setTimeout(() => createBtn.textContent = "Create", 2000);
+        setEnabled();
+        actionBtn.textContent = "Failed";
+        console.error(res);
+        setTimeout(setEnabled, 2000);
       }
     };
 
-    btnRow.append(closeBtn, createBtn);
+    btnRow.append(closeBtn, actionBtn);
     card.append(title, sub, btnRow);
     backdrop.appendChild(card);
     document.body.appendChild(backdrop);
 
-    function close() {
-      backdrop.remove();
-    }
-
-    function refresh() {
-      const g = buildCSS();
-      preview.style.background = g;
-    }
+    function close() { backdrop.remove(); }
+    function refresh() { preview.style.background = buildCSS(); }
 
     renderStops();
     refresh();
@@ -353,21 +387,26 @@
     if (!createBtn || createBtn.dataset.gradientAttached) return;
     createBtn.dataset.gradientAttached = "true";
 
-    const clone = createBtn.cloneNode(true);
-    delete clone.dataset.gradientAttached;
+    function makeClone(labelText, subLabelText, mode) {
+      const clone = createBtn.cloneNode(true);
+      delete clone.dataset.gradientAttached;
+      const labelDiv = clone.querySelector("div.flex-g_1 div");
+      if (labelDiv) labelDiv.textContent = labelText;
+      const subText = clone.querySelector("span");
+      if (subText) subText.textContent = subLabelText;
+      clone.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openDialog(mode);
+      };
+      return clone;
+    }
 
-    const labelDiv = clone.querySelector("div.flex-g_1 div");
-    if (labelDiv) labelDiv.textContent = "Create Gradient Role";
-    const subText = clone.querySelector("span");
-    if (subText) subText.textContent = "Create a role with gradient color";
+    const createClone = makeClone("Create Gradient Role", "Create a role with gradient color", "create");
+    const editClone   = makeClone("Edit Role Gradient",   "Change an existing role's gradient",  "edit");
 
-    clone.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openDialog();
-    };
-
-    createBtn.parentElement.insertBefore(clone, createBtn.nextSibling);
+    createBtn.parentElement.insertBefore(createClone, createBtn.nextSibling);
+    createBtn.parentElement.insertBefore(editClone, createClone.nextSibling);
   }
 
   new MutationObserver(injectGradientRoleButton)
