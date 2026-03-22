@@ -33,7 +33,7 @@ function buildButton() {
 
     const labelInner = document.createElement("div");
     labelInner.className = "gap_var(--gap-md) h_100% d_flex ai_center";
-    labelInner.textContent = "Trusted Plugins";
+    labelInner.textContent = "Trusted Plugins/Themes";
 
     labelWrap.appendChild(labelInner);
     inner.appendChild(ripple);
