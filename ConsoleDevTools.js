@@ -550,7 +550,20 @@
         const textNode = [...devtoolsBtn.querySelectorAll('div')]
             .find(d => d.children.length === 0 && d.textContent.trim() === 'Appearance');
         if (textNode) textNode.textContent = '(Avia) Devtools';
-        if (typeof setIcon === 'function') setIcon(devtoolsBtn, 'terminal');
+    const oldSvg = devtoolsBtn.querySelector('svg');
+if (oldSvg) {
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '20');
+    svg.setAttribute('height', '20');
+    svg.setAttribute('fill', 'currentColor');
+    svg.style.marginRight = '8px';
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', 'M20 19V7H4v12h16zm0-14a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2h16zm-7 3h-2v2h2V8zm0 4h-2v2h2v-2zm-4-4H7v2h2V8zm0 4H7v2h2v-2zm8-4h-2v2h2V8zm0 4h-2v2h2v-2z');
+    svg.appendChild(path);
+    oldSvg.replaceWith(svg);
+}
         devtoolsBtn.addEventListener('click', toggleDevtoolsPanel);
         referenceNode.parentElement.insertBefore(devtoolsBtn, referenceNode.nextSibling);
     }
