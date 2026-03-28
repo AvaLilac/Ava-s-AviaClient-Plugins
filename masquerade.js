@@ -39,8 +39,12 @@ if(window.__US_BUILDER_IMPERSONATE_JS__){return;}window.__US_BUILDER_IMPERSONATE
       impersonateButton.addEventListener('click',async ()=>{
           if(impersonateButton.parentElement.parentElement.parentElement.parentElement.children[0].children[0].children[0].children[0].children[0].innerText){
               let originalavatar = impersonateButton.parentElement.parentElement.parentElement.parentElement.children[0].children[0].children[0].children[0].children[0].children[1].children[0].children[0].children[0].children[0].children[0].src
-              let avatar = impersonateButton.parentElement.parentElement.parentElement.parentElement.children[0].children[0].children[0].children[0].children[0].children[1].children[0].children[0].children[0].children[0].children[0].src+'/original'
+              let avatar = impersonateButton.parentElement.parentElement.parentElement.parentElement.children[0].children[0].children[0].children[0].children[0].children[1].children[0].children[0].children[0].children[0].children[0].src
               let displayname = impersonateButton.parentElement.parentElement.parentElement.parentElement.children[0].children[0].children[0].children[0].children[0].innerText
+
+              if(!avatar.includes('/original')){
+                avatar = avatar+'/original'
+              }
 
               const res = await fetch(avatar)
               if(res.ok){
@@ -49,19 +53,29 @@ if(window.__US_BUILDER_IMPERSONATE_JS__){return;}window.__US_BUILDER_IMPERSONATE
                 avatar = originalavatar
               }
 
+              if(displayname.charAt(0)=='\n'){
+                displayname = displayname.replace('\n','')
+              }
+
               if(displayname.includes('\n')){
+                if(displayname.substring(0,displayname.indexOf('\n')).length>0){
                   displayname = displayname.substring(0,displayname.indexOf('\n'))
+                }
               }
 
               if(displayname.includes('#')){
-                  displayname = displayname.substring(0,displayname.indexOf('#'))
+                  if(displayname.substring(0,displayname.indexOf('#')).length>0){
+                    displayname = displayname.substring(0,displayname.indexOf('#'))
+                  }
               }
               const masquerade = {name:displayname,avatar:avatar,enabled:false}
               const masqueradeList= JSON.parse(localStorage.getItem('avia_masq_list'))||[];
               const currentMasquerade = masqueradeList.find(m=>m.enabled)
-              currentMasquerade.enabled=false
-              masqueradeList.splice(masqueradeList.indexOf(currentMasquerade),1)
-              masqueradeList.push(currentMasquerade)
+              if(currentMasquerade){
+                currentMasquerade.enabled=false
+                masqueradeList.splice(masqueradeList.indexOf(currentMasquerade),1)
+                masqueradeList.push(currentMasquerade)
+              }
               const test = masqueradeList.find(m=>m.name==masquerade.name)
               if(!test){
                   masquerade.enabled=true;
@@ -71,6 +85,7 @@ if(window.__US_BUILDER_IMPERSONATE_JS__){return;}window.__US_BUILDER_IMPERSONATE
                   test.enabled=true
                   masqueradeList.push(test)
               }
+
               localStorage.setItem('avia_masq_list',JSON.stringify(masqueradeList))
           }else{
             window.alert('Impersonating via the right click context menu doesn\'t work!')
@@ -393,7 +408,22 @@ function injectSettingsButton() {
     wrapper.parentElement.insertBefore(clone, wrapper.nextSibling);
 }
 
-new MutationObserver(injectSettingsButton)
+function uninjectSettingsButton(){
+  const button = document.getElementById('avia-masq-btn')
+  if(button){
+    button.parentElement.removeChild(button)
+  }
+}
+
+new MutationObserver(()=>{
+  const gifSpan = [...document.querySelectorAll("span.material-symbols-outlined")]
+  .find(s => s.textContent.trim() === "gif");
+  if(!gifSpan){
+    uninjectSettingsButton()
+    return;
+  }
+  injectSettingsButton()
+})
 .observe(document.body, { childList: true, subtree: true });
 
 injectSettingsButton();
