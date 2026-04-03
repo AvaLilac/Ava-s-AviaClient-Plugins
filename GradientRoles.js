@@ -51,6 +51,196 @@
     );
   }
 
+  const PRESETS = [
+    {
+      label: "Rainbow", category: "general",
+      stops: [
+        { color: "#f00", pos: 0 },
+        { color: "#ff0", pos: 25 },
+        { color: "#0f0", pos: 50 },
+        { color: "#00f", pos: 75 },
+        { color: "#f0f", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Sunset", category: "general",
+      stops: [
+        { color: "#ff512f", pos: 0 },
+        { color: "#f09819", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Ocean", category: "general",
+      stops: [
+        { color: "#1a6dff", pos: 0 },
+        { color: "#00c4ff", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Forest", category: "general",
+      stops: [
+        { color: "#134e5e", pos: 0 },
+        { color: "#71b280", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Fire", category: "general",
+      stops: [
+        { color: "#ff0000", pos: 0 },
+        { color: "#ff6600", pos: 50 },
+        { color: "#ffcc00", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Galaxy", category: "general",
+      stops: [
+        { color: "#1a0533", pos: 0 },
+        { color: "#6a0dad", pos: 50 },
+        { color: "#00bfff", pos: 100 },
+      ],
+      type: "linear", angle: 135,
+    },
+    {
+      label: "Peach", category: "general",
+      stops: [
+        { color: "#ffb347", pos: 0 },
+        { color: "#ff6b81", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Cherry Blossom", category: "general",
+      stops: [
+        { color: "#ffb7c5", pos: 0 },
+        { color: "#ff6f91", pos: 100 },
+      ],
+      type: "linear", angle: 135,
+    },
+    {
+      label: "Gold", category: "general",
+      stops: [
+        { color: "#f7971e", pos: 0 },
+        { color: "#ffd200", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Trans", category: "pride",
+      stops: [
+        { color: "#55cdfc", pos: 0 },
+        { color: "#f7a8b8", pos: 25 },
+        { color: "#ffffff", pos: 50 },
+        { color: "#f7a8b8", pos: 75 },
+        { color: "#55cdfc", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Bisexual", category: "pride",
+      stops: [
+        { color: "#d60270", pos: 0 },
+        { color: "#9b4f96", pos: 50 },
+        { color: "#0038a8", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Non-Binary", category: "pride",
+      stops: [
+        { color: "#fcf434", pos: 0 },
+        { color: "#ffffff", pos: 33 },
+        { color: "#9c59d1", pos: 66 },
+        { color: "#2d2d2d", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Asexual", category: "pride",
+      stops: [
+        { color: "#000000", pos: 0 },
+        { color: "#a3a3a3", pos: 33 },
+        { color: "#ffffff", pos: 66 },
+        { color: "#800080", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Pansexual", category: "pride",
+      stops: [
+        { color: "#ff218c", pos: 0 },
+        { color: "#ffd800", pos: 50 },
+        { color: "#21b1ff", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Genderqueer", category: "pride",
+      stops: [
+        { color: "#b57edc", pos: 0 },
+        { color: "#ffffff", pos: 50 },
+        { color: "#4a8123", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Genderfluid", category: "pride",
+      stops: [
+        { color: "#ff76a4", pos: 0 },
+        { color: "#ffffff", pos: 25 },
+        { color: "#c011d7", pos: 50 },
+        { color: "#000000", pos: 75 },
+        { color: "#2c3875", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Lesbian", category: "pride",
+      stops: [
+        { color: "#d52d00", pos: 0 },
+        { color: "#ff9a56", pos: 25 },
+        { color: "#ffffff", pos: 50 },
+        { color: "#d362a4", pos: 75 },
+        { color: "#a50062", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Aromantic", category: "pride",
+      stops: [
+        { color: "#3da542", pos: 0 },
+        { color: "#a8d379", pos: 25 },
+        { color: "#ffffff", pos: 50 },
+        { color: "#a9a9a9", pos: 75 },
+        { color: "#000000", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Demisexual", category: "pride",
+      stops: [
+        { color: "#000000", pos: 0 },
+        { color: "#ffffff", pos: 33 },
+        { color: "#810081", pos: 66 },
+        { color: "#c0c0c0", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+    {
+      label: "Polysexual", category: "pride",
+      stops: [
+        { color: "#f61cb9", pos: 0 },
+        { color: "#07d569", pos: 50 },
+        { color: "#1c92f6", pos: 100 },
+      ],
+      type: "linear", angle: 90,
+    },
+  ];
+
   let stops = [
     { color: "#ff0000", pos: 0 },
     { color: "#ff00ff", pos: 50 },
@@ -68,7 +258,6 @@
     stopsArr.forEach((stop, i) => {
       const start = Math.round((i / n) * 100);
       const end   = Math.round(((i + 1) / n) * 100);
-
       out.push(start === 0  ? stop.color : `${stop.color} ${start}%`);
       out.push(end   === 100 ? stop.color : `${stop.color} ${end}%`);
     });
@@ -76,7 +265,6 @@
   }
 
   function buildGradientCSS(stopsStr) {
-
     if (gType === "radial") return `radial-gradient(${stopsStr})`;
     return `linear-gradient(${gAngle}deg,${stopsStr})`;
   }
@@ -89,7 +277,6 @@
       ctx.fillStyle = color;
       ctx.fillRect(0, 0, 1, 1);
       const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-
       const hex6 = [r, g, b].map(v => v.toString(16).padStart(2, "0")).join("");
       const canShorten = hex6[0] === hex6[1] && hex6[2] === hex6[3] && hex6[4] === hex6[5];
       return canShorten ? `#${hex6[0]}${hex6[2]}${hex6[4]}` : `#${hex6}`;
@@ -111,41 +298,31 @@
   }
 
   function parseNamedColors(raw) {
-
     const parts = raw.replace(/,\s*$/, "").split(",").map(p => p.trim()).filter(Boolean);
     if (parts.length < 1) return null;
-
     const tester = document.createElement("div");
     tester.style.display = "none";
     document.body.appendChild(tester);
-
     function isValidColor(color) {
-
       if (/^#([0-9a-fA-F]{3,8})$/.test(color)) return true;
       if (/^rgb/i.test(color)) return true;
       if (/^hsl/i.test(color)) return true;
-
       tester.style.color = "";
       tester.style.color = color;
       const computed = getComputedStyle(tester).color;
-
       if (!computed) return false;
       if (computed === "rgba(0, 0, 0, 0)") return color.trim().toLowerCase() === "transparent";
       return true;
     }
-
     const valid = [];
     for (const color of parts) {
       if (isValidColor(color)) valid.push(color);
-
     }
     tester.remove();
-
     if (valid.length < 1) return null;
     if (valid.length === 1) {
       return [{ color: valid[0], pos: 0 }, { color: valid[0], pos: 100 }];
     }
-
     return valid.map((color, i) => ({
       color,
       pos: Math.round((i / (valid.length - 1)) * 100),
@@ -160,6 +337,17 @@
       ? toHardStops(s)
       : s.map(s => `${s.color} ${s.pos}%`).join(forApi ? "," : ", ");
     return buildGradientCSS(stopsStr);
+  }
+
+  function presetToCSS(preset) {
+    if (preset.category === "pride") {
+      const stopsStr = toHardStops(preset.stops);
+      if (preset.type === "radial") return `radial-gradient(${stopsStr})`;
+      return `linear-gradient(${preset.angle}deg,${stopsStr})`;
+    }
+    const stopsStr = preset.stops.map(s => `${s.color} ${s.pos}%`).join(",");
+    if (preset.type === "radial") return `radial-gradient(${stopsStr})`;
+    return `linear-gradient(${preset.angle}deg,${stopsStr})`;
   }
 
   function openDialog(mode) {
@@ -192,7 +380,7 @@
     Object.assign(card.style, {
       padding: "24px",
       minWidth: "280px",
-      maxWidth: "520px",
+      maxWidth: "540px",
       width: "100%",
       borderRadius: "28px",
       display: "flex",
@@ -200,7 +388,11 @@
       color: "var(--md-sys-color-on-surface)",
       background: "var(--md-sys-color-surface-container-high)",
       boxSizing: "border-box",
+      maxHeight: "90vh",
+      overflowY: "auto",
+      scrollbarWidth: "none",
     });
+    card.style.msOverflowStyle = "none";
 
     const title = document.createElement("span");
     title.textContent = isEdit ? "Edit Role Gradient" : "Create Gradient Role";
@@ -259,6 +451,141 @@
     const { wrap: roleIdWrap, el: roleIdInput } = isEdit
       ? mkField("Role ID", "Paste role ID here")
       : { wrap: null, el: null };
+
+    let activeCategory = "general";
+
+    const presetsWrap = document.createElement("div");
+    Object.assign(presetsWrap.style, { display: "flex", flexDirection: "column", gap: "8px" });
+
+    const catRow = document.createElement("div");
+    Object.assign(catRow.style, {
+      display: "flex", gap: "6px", alignItems: "center",
+    });
+
+    const presetsLbl = document.createElement("span");
+    presetsLbl.textContent = "Presets";
+    Object.assign(presetsLbl.style, {
+      fontSize: "0.75rem", letterSpacing: "0.025rem",
+      color: "var(--md-sys-color-on-surface-variant)",
+      marginRight: "4px",
+    });
+
+    const categories = [
+      { key: "general", label: "✨ General" },
+      { key: "pride",   label: "🏳️‍🌈 Pride" },
+    ];
+
+    const catBtns = {};
+    categories.forEach(({ key, label }) => {
+      const btn = document.createElement("button");
+      btn.textContent = label;
+      Object.assign(btn.style, {
+        padding: "4px 12px", border: "none", cursor: "pointer",
+        fontSize: "0.75rem", fontFamily: "inherit", borderRadius: "999px",
+        transition: "background 0.15s, color 0.15s",
+      });
+      btn.onclick = () => {
+        activeCategory = key;
+        renderPresetBtns();
+        Object.values(catBtns).forEach(b => applyCatStyle(b));
+      };
+      catBtns[key] = btn;
+      catRow.append(btn);
+    });
+
+    function applyCatStyle(btn) {
+      const isActive = categories.find(c => c.label === btn.textContent || catBtns[c.key] === btn)?.key === activeCategory;
+      btn.style.background = isActive
+        ? "var(--md-sys-color-primary)"
+        : "color-mix(in srgb, 10% var(--md-sys-color-on-surface), transparent)";
+      btn.style.color = isActive
+        ? "var(--md-sys-color-on-primary)"
+        : "var(--md-sys-color-on-surface-variant)";
+    }
+
+    catRow.prepend(presetsLbl);
+
+    const presetsGrid = document.createElement("div");
+    Object.assign(presetsGrid.style, { display: "flex", flexWrap: "wrap", gap: "6px" });
+
+    function makePresetBtn(preset) {
+      const btn = document.createElement("button");
+      Object.assign(btn.style, {
+        display: "flex", alignItems: "center", gap: "6px",
+        padding: "5px 10px 5px 6px",
+        border: "1px solid color-mix(in srgb, 18% var(--md-sys-color-on-surface), transparent)",
+        borderRadius: "999px", cursor: "pointer",
+        background: "color-mix(in srgb, 6% var(--md-sys-color-on-surface), transparent)",
+        color: "var(--md-sys-color-on-surface)",
+        fontSize: "0.8rem", fontFamily: "inherit",
+        transition: "border-color 0.15s, background 0.15s",
+        whiteSpace: "nowrap",
+      });
+
+      const swatch = document.createElement("span");
+      Object.assign(swatch.style, {
+        width: "14px", height: "14px", borderRadius: "50%", flexShrink: "0",
+        background: presetToCSS(preset), display: "inline-block",
+        border: "1px solid color-mix(in srgb, 20% var(--md-sys-color-on-surface), transparent)",
+      });
+
+      btn.append(swatch, document.createTextNode(preset.label));
+
+      btn.onmouseenter = () => {
+        btn.style.borderColor = "var(--md-sys-color-primary)";
+        btn.style.background = "color-mix(in srgb, 12% var(--md-sys-color-primary), transparent)";
+      };
+      btn.onmouseleave = () => {
+        btn.style.borderColor = "color-mix(in srgb, 18% var(--md-sys-color-on-surface), transparent)";
+        btn.style.background = "color-mix(in srgb, 6% var(--md-sys-color-on-surface), transparent)";
+      };
+
+      btn.onclick = () => {
+        stops = preset.stops.map(s => ({ ...s }));
+        gType = preset.type;
+        gAngle = preset.angle;
+
+        if (preset.category === "pride") {
+          hardStop = true;
+          hardStopCheckbox.checked = true;
+          hardStopDesc.textContent = "Colors snap sharply — no blending between them.";
+        } else {
+          hardStop = false;
+          hardStopCheckbox.checked = false;
+          hardStopDesc.textContent = "Colors blend smoothly from one to the next.";
+        }
+
+        switchMode("picker");
+        typeSelect.value = gType;
+        angleSlider.value = gAngle;
+        angleLabel.textContent = `${gAngle}°`;
+        angleSlider.style.display = gType === "radial" ? "none" : "";
+        angleLabel.style.display  = gType === "radial" ? "none" : "";
+        renderStops();
+        refresh();
+      };
+
+      return btn;
+    }
+
+    function renderPresetBtns() {
+      presetsGrid.innerHTML = "";
+      PRESETS.filter(p => p.category === activeCategory).forEach(preset => {
+        presetsGrid.appendChild(makePresetBtn(preset));
+      });
+
+      Object.entries(catBtns).forEach(([key, btn]) => {
+        const isActive = key === activeCategory;
+        btn.style.background = isActive
+          ? "var(--md-sys-color-primary)"
+          : "color-mix(in srgb, 10% var(--md-sys-color-on-surface), transparent)";
+        btn.style.color = isActive
+          ? "var(--md-sys-color-on-primary)"
+          : "var(--md-sys-color-on-surface-variant)";
+      });
+    }
+
+    presetsWrap.append(catRow, presetsGrid);
 
     const preview = document.createElement("div");
     Object.assign(preview.style, {
@@ -445,7 +772,7 @@
         row.append(swatch, slider, posLbl, rmBtn);
         stopsList.appendChild(row);
       });
-      addStopBtn.style.display  = stops.length >= 5 ? "none" : "";
+      addStopBtn.style.display   = stops.length >= 5 ? "none" : "";
       pickerCapMsg.style.display = stops.length >= 5 ? "" : "none";
     }
 
@@ -530,9 +857,9 @@
     textSection.append(textLbl, textInput, textHint, textCapMsg, textLenMsg);
 
     if (isEdit) {
-      sub.append(roleIdWrap, preview, toggleRow, typeRow, hardStopRow, pickerSection, textSection);
+      sub.append(roleIdWrap, presetsWrap, preview, toggleRow, typeRow, hardStopRow, pickerSection, textSection);
     } else {
-      sub.append(nameWrap, preview, toggleRow, typeRow, hardStopRow, pickerSection, textSection);
+      sub.append(nameWrap, presetsWrap, preview, toggleRow, typeRow, hardStopRow, pickerSection, textSection);
     }
 
     function switchMode(m) {
@@ -611,7 +938,6 @@
       let css;
       if (inputMode === "text") {
         const raw = textInput.value.trim();
-
         const parts = raw.replace(/,\s*$/, "").split(",").map(p => p.trim()).filter(Boolean);
         css = buildCSSFromText(raw, true);
         if (!css || parts.length < 2) {
@@ -695,6 +1021,7 @@
 
     applyToggleStyles();
     renderStops();
+    renderPresetBtns();
     refresh();
   }
 
