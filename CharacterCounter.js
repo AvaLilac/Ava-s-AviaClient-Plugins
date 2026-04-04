@@ -43,7 +43,7 @@
     counter.style.cssText = `
       position: absolute;
       left: 12px;
-      bottom: 4px;
+      bottom: 1px;
       z-index: 5;
       font-size: 0.7rem;
       line-height: 1;
