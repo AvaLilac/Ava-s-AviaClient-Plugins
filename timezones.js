@@ -3,125 +3,267 @@
 if (window.__AVIA_TIMEZONES__) return;
 window.__AVIA_TIMEZONES__ = true;
 
-const STORAGE_ZONES = "avia_timezones";
-const STORAGE_ENABLED = "avia_timezones_enabled";
+const STORAGE_ZONES       = "avia_timezones";
+const STORAGE_ENABLED     = "avia_timezones_enabled";
+const STORAGE_USER_ZONES  = "avia_timezones_users";
+const STORAGE_USER_NAMES  = "avia_timezones_names";
+const STORAGE_USER_ONLY   = "avia_timezones_user_only";
 
 const ALL_TIMEZONES = Intl.supportedValuesOf("timeZone");
 
 let ZONES;
-
 try {
     ZONES = JSON.parse(localStorage.getItem(STORAGE_ZONES) || "[]");
     if (!Array.isArray(ZONES)) ZONES = [];
-} catch {
-    ZONES = [];
-}
-
+} catch { ZONES = []; }
 ZONES = ZONES.filter(z => ALL_TIMEZONES.includes(z));
 
-let ENABLED = localStorage.getItem(STORAGE_ENABLED) !== "false";
+let USER_ZONES;
+try {
+    USER_ZONES = JSON.parse(localStorage.getItem(STORAGE_USER_ZONES) || "{}");
+    if (typeof USER_ZONES !== "object" || Array.isArray(USER_ZONES)) USER_ZONES = {};
+} catch { USER_ZONES = {}; }
+
+let USER_NAMES;
+try {
+    USER_NAMES = JSON.parse(localStorage.getItem(STORAGE_USER_NAMES) || "{}");
+    if (typeof USER_NAMES !== "object") USER_NAMES = {};
+} catch { USER_NAMES = {}; }
+
+let ENABLED   = localStorage.getItem(STORAGE_ENABLED)   !== "false";
+let USER_ONLY = localStorage.getItem(STORAGE_USER_ONLY) === "true";
+
+(function patchFetch() {
+    const _fetch = window.fetch;
+    window.fetch = async function (...args) {
+        const res = await _fetch(...args);
+        try {
+            const url = typeof args[0] === "string" ? args[0] : (args[0]?.url || "");
+            if (url.includes("/api/")) {
+                res.clone().json().then(harvestUsers).catch(() => {});
+            }
+        } catch {}
+        return res;
+    };
+})();
+
+function harvestUsers(data) {
+    if (!data || typeof data !== "object") return;
+    if (data._id && (data.username || data.display_name)) {
+        const name = data.display_name || data.username;
+        if (USER_NAMES[data._id] !== name) {
+            USER_NAMES[data._id] = name;
+            localStorage.setItem(STORAGE_USER_NAMES, JSON.stringify(USER_NAMES));
+        }
+    }
+    if (Array.isArray(data))  { data.forEach(harvestUsers); return; }
+    if (data.members)  data.members.forEach(harvestUsers);
+    if (data.users)    data.users.forEach(harvestUsers);
+    if (data.messages) data.messages.forEach(msg => {
+        if (msg.author && typeof msg.author === "object") harvestUsers(msg.author);
+    });
+}
+
+const API_BASE = window.location.origin;
+
+async function fetchUser(userId) {
+    try {
+        const res = await fetch(`${API_BASE}/api/users/${userId}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        const name = data.display_name || data.username || userId;
+        USER_NAMES[userId] = name;
+        localStorage.setItem(STORAGE_USER_NAMES, JSON.stringify(USER_NAMES));
+        return data;
+    } catch { return null; }
+}
+
+function getDisplayNameFromGroup(groupRoot) {
+
+    const timeEl = groupRoot.querySelector("time[datetime]");
+    const headerRow = timeEl ? timeEl.closest('[class*="d_flex"][class*="flex-d_row"], [class*="d_flex"][class*="ai_center"]') : null;
+
+    if (headerRow) {
+        const nameSpan = headerRow.querySelector(
+            'span[class*="fs_0.875rem"] span,' +
+            'span[class*="fw_500"] span'
+        );
+        if (nameSpan) {
+            const t = nameSpan.textContent.trim();
+            if (t) return t;
+        }
+    }
+
+    const replyBar = groupRoot.querySelector('[class*="max-h_1.5em"]');
+    const allNameSpans = [...groupRoot.querySelectorAll('span[class*="fs_0.875rem"] span, span[class*="fw_500"] span')];
+    for (const span of allNameSpans) {
+        if (replyBar && replyBar.contains(span)) continue;
+        const t = span.textContent.trim();
+        if (t) return t;
+    }
+
+    return null;
+}
+
+function getUserIdFromTimeEl(timeEl) {
+    let el = timeEl.parentElement;
+    for (let i = 0; i < 15 && el; i++) {
+        const uid =
+            el.dataset.userId   ||
+            el.dataset.authorId ||
+            el.getAttribute("data-user-id")   ||
+            el.getAttribute("data-author-id");
+        if (uid) return uid;
+        el = el.parentElement;
+    }
+
+    let groupRoot = timeEl;
+    for (let i = 0; i < 15; i++) {
+        groupRoot = groupRoot.parentElement;
+        if (!groupRoot) break;
+        if (/^[0-9A-Z]{26}$/i.test(groupRoot.id)) break;
+    }
+    if (!groupRoot) return null;
+
+    const displayName = getDisplayNameFromGroup(groupRoot);
+    if (!displayName) return null;
+
+    for (const [id, name] of Object.entries(USER_NAMES)) {
+        if (name === displayName) return id;
+    }
+    return null;
+}
 
 function getOffset(date, tz) {
-
     const parts = new Intl.DateTimeFormat("en-US", {
-        timeZone: tz,
-        timeZoneName: "shortOffset"
+        timeZone: tz, timeZoneName: "shortOffset"
     }).formatToParts(date);
-
-    const part = parts.find(p => p.type === "timeZoneName");
-    return part ? part.value : "";
+    const p = parts.find(p => p.type === "timeZoneName");
+    return p ? p.value : "";
 }
 
 function getTime(date, tz) {
-
     return new Intl.DateTimeFormat(navigator.language, {
-        timeZone: tz,
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: undefined
+        timeZone: tz, hour: "numeric", minute: "2-digit", hour12: undefined
     }).format(date);
 }
 
+function resolveTimezoneForEl(timeEl) {
+    const uid = getUserIdFromTimeEl(timeEl);
+
+    if (uid && USER_ZONES[uid] && ALL_TIMEZONES.includes(USER_ZONES[uid]))
+        return USER_ZONES[uid];
+
+    if (USER_ONLY) return null;
+
+    return ZONES[0] || null;
+}
+
 function applyTimezones() {
-
-    document.querySelectorAll("time[datetime]").forEach(el => {
-
+    document.querySelectorAll(ENABLED ? "main time[datetime]:not([data-avia-timezone-original][data-avia-timezone-done])" : "main time[datetime]").forEach(el => {
         const text = el.textContent.trim();
-
-        const isMessageTime =
-            text.includes("Today") ||
-            text.includes("Yesterday") ||
-            text.includes(" at ");
-
-        const isDateSeparator =
-            /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(text);
-
+        const isMessageTime   = text.includes("Today") || text.includes("Yesterday") || text.includes(" at ");
+        const isDateSeparator = /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(text);
         if (!isMessageTime && !isDateSeparator) return;
 
         const iso = el.getAttribute("datetime");
         if (!iso) return;
-
         const date = new Date(iso);
-
-        if (!ENABLED || !ZONES.length) {
-
-            if (el.dataset.aviaTimezoneOriginal) {
-                el.textContent = el.dataset.aviaTimezoneOriginal;
-            }
-
-            delete el.dataset.aviaTimezoneDone;
-            return;
-        }
 
         if (!el.dataset.aviaTimezoneOriginal)
             el.dataset.aviaTimezoneOriginal = el.textContent;
 
-        if (el.dataset.aviaTimezoneDone) return;
+        if (!ENABLED) {
+            el.textContent = el.dataset.aviaTimezoneOriginal;
+            delete el.dataset.aviaTimezoneDone;
+            return;
+        }
 
-        const tz = ZONES[0];
+        const tz = resolveTimezoneForEl(el);
+        if (!tz) {
+            el.textContent = el.dataset.aviaTimezoneOriginal;
+            delete el.dataset.aviaTimezoneDone;
+            return;
+        }
+
+        if (el.dataset.aviaTimezoneDone === tz) return;
 
         try {
-
-            const time = getTime(date, tz);
+            const time   = getTime(date, tz);
             const offset = getOffset(date, tz);
-
             if (time && offset) {
-                el.textContent =
-                    el.dataset.aviaTimezoneOriginal + ` (${time} ${offset})`;
-                el.dataset.aviaTimezoneDone = "true";
+                el.textContent = el.dataset.aviaTimezoneOriginal + ` (${time} ${offset})`;
+                el.dataset.aviaTimezoneDone = tz;
             }
-
         } catch {}
-
     });
-
 }
 
 let timezoneCooldown = false;
-
-const timezoneObserver = new MutationObserver(() => {
-
+new MutationObserver(() => {
     if (timezoneCooldown) return;
-
     timezoneCooldown = true;
-
-    setTimeout(() => {
-
-        applyTimezones();
-        timezoneCooldown = false;
-
-    }, 200);
-
-});
-
-timezoneObserver.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => { applyTimezones(); timezoneCooldown = false; }, 200);
+}).observe(document.body, { childList: true, subtree: true });
 
 applyTimezones();
 
+function saveUserZones() {
+    localStorage.setItem(STORAGE_USER_ZONES, JSON.stringify(USER_ZONES));
+}
+
+function invalidateAll() {
+    document.querySelectorAll("time[datetime]").forEach(el => {
+        delete el.dataset.aviaTimezoneDone;
+    });
+    applyTimezones();
+}
+
+function styleBtn(btn, bg) {
+    Object.assign(btn.style, {
+        padding: "5px 12px", borderRadius: "8px", border: "none",
+        background: bg || "rgba(255,255,255,0.08)",
+        color: "var(--md-sys-color-on-surface, #fff)",
+        cursor: "pointer", fontSize: "12px", whiteSpace: "nowrap"
+    });
+    btn.onmouseenter = () => btn.style.opacity = "0.75";
+    btn.onmouseleave = () => btn.style.opacity = "1";
+}
+
+function styleInput(el) {
+    Object.assign(el.style, {
+        padding: "6px 8px", borderRadius: "8px",
+        border: "1px solid rgba(255,255,255,0.1)",
+        background: "rgba(255,255,255,0.05)",
+        color: "var(--md-sys-color-on-surface, #fff)",
+        fontSize: "13px", outline: "none",
+        boxSizing: "border-box", width: "100%"
+    });
+}
+
+function enableDrag(panel, handle) {
+    let isDragging = false, offsetX, offsetY;
+    handle.addEventListener("mousedown", e => {
+        isDragging = true;
+        offsetX = e.clientX - panel.offsetLeft;
+        offsetY = e.clientY - panel.offsetTop;
+        document.body.style.userSelect = "none";
+    });
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+        document.body.style.userSelect = "";
+    });
+    document.addEventListener("mousemove", e => {
+        if (!isDragging) return;
+        panel.style.left   = (e.clientX - offsetX) + "px";
+        panel.style.top    = (e.clientY - offsetY) + "px";
+        panel.style.right  = "auto";
+        panel.style.bottom = "auto";
+    });
+}
+
 function togglePanel() {
-
     let panel = document.getElementById("avia-timezone-panel");
-
     if (panel) {
         panel.style.display = panel.style.display === "none" ? "flex" : "none";
         return;
@@ -129,256 +271,424 @@ function togglePanel() {
 
     panel = document.createElement("div");
     panel.id = "avia-timezone-panel";
-
     Object.assign(panel.style, {
-        position: "fixed",
-        bottom: "40px",
-        right: "40px",
-        width: "380px",
-        height: "500px",
-        background: "#1e1e1e",
-        color: "#fff",
-        borderRadius: "20px",
-        boxShadow: "0 12px 35px rgba(0,0,0,0.45)",
-        zIndex: 999999,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.08)"
+        position: "fixed", bottom: "24px", right: "40px",
+        width: "420px", height: "500px",
+        background: "var(--md-sys-color-surface, #1e1e1e)",
+        color: "var(--md-sys-color-on-surface, #fff)",
+        borderRadius: "16px", boxShadow: "0 8px 28px rgba(0,0,0,0.35)",
+        zIndex: "999999", display: "flex", flexDirection: "column",
+        overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)",
+        backdropFilter: "blur(12px)"
     });
 
     const header = document.createElement("div");
-    header.textContent = "Avia Timezones";
-
     Object.assign(header.style, {
-        padding: "18px",
-        fontWeight: "600",
-        fontSize: "16px",
-        background: "rgba(255,255,255,0.04)",
+        padding: "14px 16px", fontWeight: "600", fontSize: "14px",
+        background: "var(--md-sys-color-surface-container, rgba(255,255,255,0.04))",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
-        cursor: "move",
-        position: "relative",
-        textAlign: "center",
-        userSelect: "none"
+        cursor: "move", position: "relative", userSelect: "none", flex: "0 0 auto",
+        display: "flex", alignItems: "center", justifyContent: "center"
     });
 
-    let isDragging = false;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    header.addEventListener("mousedown", (e) => {
-
-        isDragging = true;
-
-        const rect = panel.getBoundingClientRect();
-
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
-
-        panel.style.bottom = "auto";
-        panel.style.right = "auto";
-        panel.style.left = rect.left + "px";
-        panel.style.top = rect.top + "px";
-
-        document.body.style.userSelect = "none";
-
-    });
-
-    document.addEventListener("mousemove", (e) => {
-
-        if (!isDragging) return;
-
-        panel.style.left = e.clientX - offsetX + "px";
-        panel.style.top = e.clientY - offsetY + "px";
-
-    });
-
-    document.addEventListener("mouseup", () => {
-
-        isDragging = false;
-        document.body.style.userSelect = "";
-
-    });
+    const headerTitle = document.createElement("span");
+    headerTitle.textContent = "Avia Timezones";
+    header.appendChild(headerTitle);
 
     const toggleBtn = document.createElement("div");
-
     Object.assign(toggleBtn.style, {
-        position: "absolute",
-        left: "18px",
-        top: "16px",
-        cursor: "pointer",
-        fontSize: "12px",
-        padding: "4px 8px",
-        borderRadius: "8px"
+        position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)",
+        cursor: "pointer", fontSize: "11px", fontWeight: "600",
+        padding: "3px 8px", borderRadius: "8px", zIndex: "1"
     });
-
-    function updateToggleUI() {
-
+    const refreshToggleUI = () => {
         toggleBtn.textContent = ENABLED ? "ON" : "OFF";
-
-        toggleBtn.style.background = ENABLED
-            ? "rgba(0,200,0,0.25)"
-            : "rgba(200,0,0,0.25)";
-    }
-
-    updateToggleUI();
-
+        toggleBtn.style.background = ENABLED ? "rgba(0,200,0,0.25)" : "rgba(200,0,0,0.25)";
+    };
+    refreshToggleUI();
     toggleBtn.onclick = () => {
-
         ENABLED = !ENABLED;
         localStorage.setItem(STORAGE_ENABLED, ENABLED);
-
-        updateToggleUI();
-
-        document.querySelectorAll("time[datetime]").forEach(el => {
-            delete el.dataset.aviaTimezoneDone;
-        });
-
-        applyTimezones();
+        refreshToggleUI();
+        invalidateAll();
     };
 
+    const closeBtn = document.createElement("div");
+    closeBtn.textContent = "✕";
+    Object.assign(closeBtn.style, {
+        position: "absolute", top: "50%", right: "16px",
+        transform: "translateY(-50%)",
+        cursor: "pointer", opacity: "0.7", zIndex: "1"
+    });
+    closeBtn.onmouseenter = () => closeBtn.style.opacity = "1";
+    closeBtn.onmouseleave = () => closeBtn.style.opacity = "0.7";
+    closeBtn.onclick = () => panel.style.display = "none";
+
     header.appendChild(toggleBtn);
+    header.appendChild(closeBtn);
 
-    const close = document.createElement("div");
-    close.textContent = "✕";
-
-    Object.assign(close.style, {
-        position: "absolute",
-        right: "18px",
-        top: "16px",
-        cursor: "pointer"
+    const tabBar = document.createElement("div");
+    Object.assign(tabBar.style, {
+        display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", flex: "0 0 auto"
     });
 
-    close.onclick = () => panel.style.display = "none";
-    header.appendChild(close);
-
-    const container = document.createElement("div");
-
-    Object.assign(container.style, {
-        flex: "1",
-        overflowY: "auto",
-        padding: "18px"
-    });
-
-    const search = document.createElement("input");
-    search.placeholder = "Search timezone...";
-
-    Object.assign(search.style, {
-        width: "100%",
-        padding: "8px",
-        marginBottom: "12px",
-        borderRadius: "8px",
-        border: "none",
-        outline: "none",
-        background: "rgba(255,255,255,0.06)",
-        color: "#fff"
-    });
-
-    container.appendChild(search);
-
-    const listWrapper = document.createElement("div");
-    container.appendChild(listWrapper);
-
-    function render(filter = "") {
-
-        listWrapper.innerHTML = "";
-
-        ALL_TIMEZONES
-        .filter(tz => tz.toLowerCase().includes(filter.toLowerCase()))
-        .forEach(tz => {
-
-            const btn = document.createElement("button");
-
-            btn.textContent = tz;
-
-            Object.assign(btn.style, {
-                width: "100%",
-                padding: "8px",
-                marginBottom: "6px",
-                borderRadius: "8px",
-                border: "none",
-                cursor: "pointer",
-                background: ZONES[0] === tz
-                    ? "rgba(255,255,255,0.2)"
-                    : "rgba(255,255,255,0.06)",
-                color: "#fff",
-                textAlign: "left"
-            });
-
-            btn.onclick = () => {
-
-                if (ZONES[0] === tz) {
-                    ZONES = [];
-                } else {
-                    ZONES = [tz];
-                }
-
-                localStorage.setItem(STORAGE_ZONES, JSON.stringify(ZONES));
-
-                document.querySelectorAll("time[datetime]").forEach(el => {
-                    delete el.dataset.aviaTimezoneDone;
-                });
-
-                render(search.value);
-                applyTimezones();
-            };
-
-            listWrapper.appendChild(btn);
-
+    function makeTab(label) {
+        const t = document.createElement("div");
+        t.textContent = label;
+        Object.assign(t.style, {
+            flex: "1", padding: "9px 12px", textAlign: "center",
+            cursor: "pointer", fontSize: "13px", fontWeight: "500",
+            color: "rgba(255,255,255,0.45)", borderBottom: "2px solid transparent",
+            transition: "color 0.15s, border-color 0.15s"
         });
-
+        return t;
     }
 
-    search.addEventListener("input", () => {
-        render(search.value);
+    const tabGlobal = makeTab("Global");
+    const tabUsers  = makeTab("Per-User");
+    tabBar.appendChild(tabGlobal);
+    tabBar.appendChild(tabUsers);
+
+    const body = document.createElement("div");
+    Object.assign(body.style, { flex: "1", overflowY: "auto", padding: "16px" });
+
+    const globalPane = document.createElement("div");
+
+    const userOnlyRow = document.createElement("div");
+    Object.assign(userOnlyRow.style, {
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "8px 12px", borderRadius: "10px", marginBottom: "12px",
+        background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)"
     });
 
-    render();
+    const userOnlyLabel = document.createElement("div");
+    userOnlyLabel.innerHTML =
+        `<div style="font-size:13px;font-weight:500">Per-User Only</div>` +
+        `<div style="font-size:11px;opacity:0.45;margin-top:2px">Don't apply global to unassigned users</div>`;
 
+    const userOnlyPill = document.createElement("div");
+    Object.assign(userOnlyPill.style, {
+        cursor: "pointer", fontSize: "11px", fontWeight: "600",
+        padding: "3px 10px", borderRadius: "8px", flexShrink: "0"
+    });
+
+    const globalSearch = document.createElement("input");
+    globalSearch.placeholder = "Search timezone…";
+    styleInput(globalSearch);
+    globalSearch.style.marginBottom = "10px";
+
+    const globalList = document.createElement("div");
+
+    const refreshUserOnlyUI = () => {
+        userOnlyPill.textContent = USER_ONLY ? "ON" : "OFF";
+        userOnlyPill.style.background = USER_ONLY ? "rgba(0,200,0,0.25)" : "rgba(200,0,0,0.25)";
+        globalSearch.style.opacity     = USER_ONLY ? "0.35" : "1";
+        globalSearch.disabled          = USER_ONLY;
+        globalList.style.opacity       = USER_ONLY ? "0.35" : "1";
+        globalList.style.pointerEvents = USER_ONLY ? "none" : "auto";
+    };
+
+    userOnlyPill.onclick = () => {
+        USER_ONLY = !USER_ONLY;
+        localStorage.setItem(STORAGE_USER_ONLY, USER_ONLY);
+        refreshUserOnlyUI();
+        invalidateAll();
+    };
+
+    userOnlyRow.appendChild(userOnlyLabel);
+    userOnlyRow.appendChild(userOnlyPill);
+    globalPane.appendChild(userOnlyRow);
+    globalPane.appendChild(globalSearch);
+    globalPane.appendChild(globalList);
+
+    refreshUserOnlyUI();
+
+    function renderGlobal(filter = "") {
+        globalList.innerHTML = "";
+        ALL_TIMEZONES
+            .filter(tz => tz.toLowerCase().includes(filter.toLowerCase()))
+            .forEach(tz => {
+                const active = ZONES[0] === tz;
+                const row = document.createElement("div");
+                Object.assign(row.style, {
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    marginBottom: "6px", padding: "8px 12px", borderRadius: "10px",
+                    background: active ? "rgba(100,180,255,0.15)" : "rgba(255,255,255,0.04)",
+                    border: active ? "1px solid rgba(100,180,255,0.3)" : "1px solid rgba(255,255,255,0.06)",
+                    cursor: "pointer", fontSize: "13px"
+                });
+                const label = document.createElement("span");
+                label.textContent = tz;
+                row.appendChild(label);
+                if (active) {
+                    const tick = document.createElement("span");
+                    tick.textContent = "✓";
+                    tick.style.cssText = "color:rgba(100,180,255,0.8);font-weight:600";
+                    row.appendChild(tick);
+                }
+                row.onmouseenter = () => { if (!active) row.style.background = "rgba(255,255,255,0.07)"; };
+                row.onmouseleave = () => { if (!active) row.style.background = "rgba(255,255,255,0.04)"; };
+                row.onclick = () => {
+                    ZONES = active ? [] : [tz];
+                    localStorage.setItem(STORAGE_ZONES, JSON.stringify(ZONES));
+                    invalidateAll();
+                    renderGlobal(globalSearch.value);
+                };
+                globalList.appendChild(row);
+            });
+    }
+    globalSearch.addEventListener("input", () => renderGlobal(globalSearch.value));
+    renderGlobal();
+
+    const userPane = document.createElement("div");
+    userPane.style.display = "none";
+
+    const addCard = document.createElement("div");
+    Object.assign(addCard.style, {
+        background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: "10px", padding: "12px", marginBottom: "14px",
+        display: "flex", flexDirection: "column", gap: "8px"
+    });
+
+    const usernameInput = document.createElement("input");
+    usernameInput.placeholder = "Display name or user ID…";
+    styleInput(usernameInput);
+
+    const suggestBox = document.createElement("div");
+    Object.assign(suggestBox.style, {
+        maxHeight: "100px", overflowY: "auto",
+        background: "var(--md-sys-color-surface-container, rgba(30,30,30,0.98))",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: "8px", display: "none"
+    });
+
+    usernameInput.addEventListener("input", () => {
+        const q = usernameInput.value.trim().toLowerCase();
+        suggestBox.innerHTML = "";
+        if (!q) { suggestBox.style.display = "none"; return; }
+        const matches = Object.entries(USER_NAMES)
+            .filter(([, name]) => name.toLowerCase().includes(q))
+            .slice(0, 8);
+        if (!matches.length) { suggestBox.style.display = "none"; return; }
+        suggestBox.style.display = "block";
+        matches.forEach(([id, name]) => {
+            const item = document.createElement("div");
+            item.textContent = name;
+            Object.assign(item.style, { padding: "7px 10px", cursor: "pointer", fontSize: "12px" });
+            item.onmouseenter = () => item.style.background = "rgba(255,255,255,0.08)";
+            item.onmouseleave = () => item.style.background = "transparent";
+            item.onmousedown = e => {
+                e.preventDefault();
+                usernameInput.value = name;
+                usernameInput.dataset.resolvedId = id;
+                suggestBox.style.display = "none";
+            };
+            suggestBox.appendChild(item);
+        });
+    });
+    usernameInput.addEventListener("blur", () => {
+        setTimeout(() => { suggestBox.style.display = "none"; }, 150);
+    });
+
+    const tzSearch = document.createElement("input");
+    tzSearch.placeholder = "Search timezone…";
+    styleInput(tzSearch);
+
+    const tzDropdown = document.createElement("div");
+    Object.assign(tzDropdown.style, {
+        maxHeight: "130px", overflowY: "auto",
+        background: "var(--md-sys-color-surface-container, rgba(30,30,30,0.98))",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: "8px", display: "none"
+    });
+
+    let selectedTzForUser = null;
+
+    tzSearch.addEventListener("focus", () => { tzDropdown.style.display = "block"; renderTzDropdown(tzSearch.value); });
+    tzSearch.addEventListener("input", () => renderTzDropdown(tzSearch.value));
+    tzSearch.addEventListener("blur", () => { setTimeout(() => { tzDropdown.style.display = "none"; }, 150); });
+
+    function renderTzDropdown(filter = "") {
+        tzDropdown.innerHTML = "";
+        ALL_TIMEZONES
+            .filter(tz => tz.toLowerCase().includes(filter.toLowerCase()))
+            .slice(0, 60)
+            .forEach(tz => {
+                const item = document.createElement("div");
+                item.textContent = tz;
+                Object.assign(item.style, {
+                    padding: "7px 10px", cursor: "pointer", fontSize: "12px",
+                    background: selectedTzForUser === tz ? "rgba(255,255,255,0.1)" : "transparent",
+                    borderRadius: "6px"
+                });
+                item.onmouseenter = () => item.style.background = "rgba(255,255,255,0.08)";
+                item.onmouseleave = () => item.style.background = selectedTzForUser === tz ? "rgba(255,255,255,0.1)" : "transparent";
+                item.onmousedown = e => {
+                    e.preventDefault();
+                    selectedTzForUser = tz;
+                    tzSearch.value = tz;
+                    tzDropdown.style.display = "none";
+                };
+                tzDropdown.appendChild(item);
+            });
+    }
+
+    const statusMsg = document.createElement("div");
+    Object.assign(statusMsg.style, { fontSize: "11px", color: "rgba(255,255,255,0.4)", minHeight: "14px" });
+
+    const addBtn = document.createElement("button");
+    addBtn.textContent = "+ Add / Update";
+    styleBtn(addBtn, "rgba(100,180,255,0.18)");
+    addBtn.style.width = "100%";
+    addBtn.style.padding = "7px";
+
+    addBtn.onclick = async () => {
+        const raw = usernameInput.value.trim();
+        const tz  = selectedTzForUser || tzSearch.value.trim();
+
+        if (!raw) { statusMsg.textContent = "Enter a display name or user ID."; return; }
+        if (!ALL_TIMEZONES.includes(tz)) { statusMsg.textContent = "Select a valid timezone first."; return; }
+
+        statusMsg.textContent = "Resolving user…";
+        addBtn.disabled = true;
+
+        let userId = usernameInput.dataset.resolvedId || null;
+        delete usernameInput.dataset.resolvedId;
+
+        if (!userId && /^[0-9A-Z]{26}$/i.test(raw)) userId = raw;
+
+        if (!userId) {
+            const lower = raw.toLowerCase();
+            for (const [id, name] of Object.entries(USER_NAMES)) {
+                if (name.toLowerCase() === lower) { userId = id; break; }
+            }
+        }
+
+        if (!userId) {
+            statusMsg.textContent = "Trying API…";
+            const data = await fetchUser(raw);
+            if (data && data._id) userId = data._id;
+        }
+
+        if (userId) {
+            const data = await fetchUser(userId);
+            const displayName = (data && (data.display_name || data.username)) || USER_NAMES[userId] || raw;
+            USER_ZONES[userId] = tz;
+            saveUserZones();
+            invalidateAll();
+            statusMsg.textContent = "✓ Set " + displayName + " → " + tz;
+            usernameInput.value = "";
+            tzSearch.value = "";
+            selectedTzForUser = null;
+            renderUserList();
+        } else {
+            statusMsg.textContent = "⚠ Not found. Open a DM or view their profile first, then retry.";
+        }
+
+        addBtn.disabled = false;
+    };
+
+    addCard.appendChild(usernameInput);
+    addCard.appendChild(suggestBox);
+    addCard.appendChild(tzSearch);
+    addCard.appendChild(tzDropdown);
+    addCard.appendChild(statusMsg);
+    addCard.appendChild(addBtn);
+
+    const userListEl = document.createElement("div");
+
+    function renderUserList() {
+        userListEl.innerHTML = "";
+        const entries = Object.entries(USER_ZONES);
+        if (!entries.length) {
+            const empty = document.createElement("div");
+            empty.textContent = "No per-user timezones set yet.";
+            Object.assign(empty.style, { opacity: "0.4", fontSize: "13px", textAlign: "center", paddingTop: "8px" });
+            userListEl.appendChild(empty);
+            return;
+        }
+        entries.forEach(([uid, tz]) => {
+            const row = document.createElement("div");
+            Object.assign(row.style, {
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                marginBottom: "8px", padding: "10px 12px", borderRadius: "10px",
+                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)"
+            });
+            const left = document.createElement("div");
+            Object.assign(left.style, { display: "flex", alignItems: "center", gap: "10px" });
+            const dot = document.createElement("div");
+            Object.assign(dot.style, {
+                width: "8px", height: "8px", borderRadius: "50%", flexShrink: "0",
+                background: "#4dff88", boxShadow: "0 0 5px #4dff88"
+            });
+            const info = document.createElement("div");
+            const name = USER_NAMES[uid] || uid;
+            info.innerHTML =
+                "<div style='font-size:13px;font-weight:500'>" + name + "</div>" +
+                "<div style='font-size:11px;opacity:0.45;margin-top:1px'>" + tz + "</div>";
+            left.appendChild(dot);
+            left.appendChild(info);
+            const removeBtn = document.createElement("button");
+            removeBtn.textContent = "✕";
+            styleBtn(removeBtn, "rgba(255,80,80,0.15)");
+            removeBtn.onclick = () => {
+                delete USER_ZONES[uid];
+                saveUserZones();
+                invalidateAll();
+                renderUserList();
+            };
+            row.appendChild(left);
+            row.appendChild(removeBtn);
+            userListEl.appendChild(row);
+        });
+    }
+    renderUserList();
+
+    userPane.appendChild(addCard);
+    userPane.appendChild(userListEl);
+
+    function activateTab(which) {
+        const isGlobal = which === "global";
+        globalPane.style.display = isGlobal ? "block" : "none";
+        userPane.style.display   = isGlobal ? "none"  : "block";
+        tabGlobal.style.color        = isGlobal ? "var(--md-sys-color-on-surface, #fff)" : "rgba(255,255,255,0.45)";
+        tabGlobal.style.borderBottom = isGlobal ? "2px solid rgba(100,180,255,0.7)" : "2px solid transparent";
+        tabUsers.style.color         = !isGlobal ? "var(--md-sys-color-on-surface, #fff)" : "rgba(255,255,255,0.45)";
+        tabUsers.style.borderBottom  = !isGlobal ? "2px solid rgba(100,180,255,0.7)" : "2px solid transparent";
+    }
+    tabGlobal.onclick = () => activateTab("global");
+    tabUsers.onclick  = () => activateTab("users");
+    activateTab("global");
+
+    body.appendChild(globalPane);
+    body.appendChild(userPane);
     panel.appendChild(header);
-    panel.appendChild(container);
-
+    panel.appendChild(tabBar);
+    panel.appendChild(body);
     document.body.appendChild(panel);
 
+    enableDrag(panel, header);
 }
 
 function injectSettingsButton() {
-
     if (document.getElementById("avia-timezone-btn")) return;
-
     const gifSpan = [...document.querySelectorAll("span.material-symbols-outlined")]
         .find(s => s.textContent.trim() === "gif");
-
     if (!gifSpan) return;
-
     const wrapper = gifSpan.closest("div.flex-sh_0");
     if (!wrapper) return;
-
     const clone = wrapper.cloneNode(true);
     clone.id = "avia-timezone-btn";
-
     clone.querySelector("span.material-symbols-outlined").textContent = "schedule";
     clone.querySelector("button").onclick = togglePanel;
-
     wrapper.parentElement.insertBefore(clone, wrapper.nextSibling);
-
 }
 
 let buttonCooldown = false;
-
 new MutationObserver(() => {
-
     if (buttonCooldown) return;
-
     buttonCooldown = true;
-
-    setTimeout(() => {
-
-        injectSettingsButton();
-        buttonCooldown = false;
-
-    }, 300);
-
+    setTimeout(() => { injectSettingsButton(); buttonCooldown = false; }, 300);
 }).observe(document.body, { childList: true, subtree: true });
 
 injectSettingsButton();
