@@ -2,8 +2,28 @@
     if (window.__WHISPER__) return;
     window.__WHISPER__ = true;
 
+    const style = document.createElement("style");
+    style.id = "whisper-hide";
+    style.textContent = `
+        [style*="position: fixed"] div.w_360px.h_120px {
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transition: none !important;
+        }
+    `;
+
     function isDM() {
         return window.location.pathname.startsWith("/channel/");
+    }
+
+    function applyCSS() {
+        if (isDM()) {
+            if (!document.getElementById("whisper-hide")) {
+                document.head.appendChild(style);
+            }
+        } else {
+            document.getElementById("whisper-hide")?.remove();
+        }
     }
 
     function findVoiceCard() {
@@ -37,16 +57,10 @@
         return document.querySelector("[data-avia-voice-btn]");
     }
 
-    function hideVoiceWrapper() {
-        const wrapper = findVoiceWrapper();
-        if (!wrapper) return;
-        wrapper.style.visibility = "hidden";
-        wrapper.style.pointerEvents = "none";
-    }
-
     function showVoiceWrapper() {
         const wrapper = findVoiceWrapper();
         if (!wrapper) return;
+        wrapper.style.transition = "none";
         wrapper.style.visibility = "visible";
         wrapper.style.pointerEvents = "none";
     }
@@ -54,6 +68,7 @@
     function restoreVoiceWrapper() {
         const wrapper = findVoiceWrapper();
         if (!wrapper) return;
+        wrapper.style.transition = "";
         wrapper.style.visibility = "";
         wrapper.style.pointerEvents = "";
     }
@@ -61,6 +76,63 @@
     function removeInjectedBtn() {
         findInjectedBtn()?.remove();
     }
+
+    // Tooltip
+    let whisperTooltip = null;
+
+    function getTooltip() {
+        if (!whisperTooltip) {
+            whisperTooltip = document.createElement("div");
+            whisperTooltip.style.cssText = "position:fixed;z-index:999;display:none;pointer-events:none;";
+            const inner = document.createElement("div");
+            inner.className = "c_white bg_black p_var(--gap-md) bdr_var(--borderRadius-md) lh_0.875rem fs_0.6875rem ls_0.03125rem fw_500";
+            inner.textContent = "Start voice call";
+            whisperTooltip.appendChild(inner);
+            document.body.appendChild(whisperTooltip);
+        }
+        return whisperTooltip;
+    }
+
+    function showTooltip(btn) {
+        const t = getTooltip();
+        t.style.display = "block";
+        const rect = btn.getBoundingClientRect();
+        // Position below the button, centered
+        requestAnimationFrame(() => {
+            const tw = t.getBoundingClientRect().width;
+            const x = rect.left + (rect.width / 2) - (tw / 2);
+            const y = rect.bottom + 6;
+            t.style.left = x + "px";
+            t.style.top  = y + "px";
+        });
+    }
+
+    function hideTooltip() {
+        getTooltip().style.display = "none";
+    }
+
+    function onRouteChange() {
+        applyCSS();
+        if (!isDM()) {
+            removeInjectedBtn();
+            restoreVoiceWrapper();
+        }
+    }
+
+    const _pushState = history.pushState.bind(history);
+    const _replaceState = history.replaceState.bind(history);
+
+    history.pushState = function (...args) {
+        _pushState(...args);
+        onRouteChange();
+    };
+
+    history.replaceState = function (...args) {
+        _replaceState(...args);
+        onRouteChange();
+    };
+
+    window.addEventListener("popstate", onRouteChange);
 
     function injectVoiceButton() {
         if (!isDM()) {
@@ -80,8 +152,6 @@
         if (!pinBtn) return;
         if (findInjectedBtn()) return;
 
-        hideVoiceWrapper();
-
         const btn = pinBtn.cloneNode(false);
         btn.setAttribute("data-avia-voice-btn", "true");
         btn.setAttribute("aria-label", "Start voice call");
@@ -96,9 +166,13 @@
         icon.textContent = "call";
         btn.appendChild(icon);
 
+        btn.addEventListener("mouseenter", () => showTooltip(btn));
+        btn.addEventListener("mouseleave", hideTooltip);
+
         btn.addEventListener("click", (e) => {
             e.stopPropagation();
             e.preventDefault();
+            hideTooltip();
 
             if (findActiveCall()) return;
 
@@ -117,7 +191,7 @@
                 if (findActiveCall()) {
                     restoreVoiceWrapper();
                 } else {
-                    hideVoiceWrapper();
+                    applyCSS();
                 }
             }, 300);
         });
@@ -130,9 +204,8 @@
             restoreVoiceWrapper();
             return;
         }
-        if (!findVoiceCard()) return;
         if (findActiveCall()) return;
-        hideVoiceWrapper();
+        applyCSS();
     }
 
     const observer = new MutationObserver(() => {
@@ -142,6 +215,7 @@
 
     observer.observe(document.body, { childList: true, subtree: true });
 
+    applyCSS();
     injectVoiceButton();
     enforceHidden();
 })();
