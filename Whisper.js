@@ -10,6 +10,11 @@
             pointer-events: none !important;
             transition: none !important;
         }
+        div.w_360px.h_120px[data-whisper-switch] {
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transition: none !important;
+        }
     `;
 
     function isDM() {
@@ -77,7 +82,6 @@
         findInjectedBtn()?.remove();
     }
 
-    // Tooltip
     let whisperTooltip = null;
 
     function getTooltip() {
@@ -97,7 +101,6 @@
         const t = getTooltip();
         t.style.display = "block";
         const rect = btn.getBoundingClientRect();
-        // Position below the button, centered
         requestAnimationFrame(() => {
             const tw = t.getBoundingClientRect().width;
             const x = rect.left + (rect.width / 2) - (tw / 2);
@@ -116,6 +119,7 @@
         if (!isDM()) {
             removeInjectedBtn();
             restoreVoiceWrapper();
+            unstampSwitchCard();
         }
     }
 
@@ -138,6 +142,7 @@
         if (!isDM()) {
             removeInjectedBtn();
             restoreVoiceWrapper();
+            unstampSwitchCard();
             return;
         }
 
@@ -199,13 +204,28 @@
         pinBtn.insertAdjacentElement("afterend", btn);
     }
 
+    function stampSwitchCard() {
+        document.querySelectorAll("div.w_360px.h_120px.trs-tmf_ease-in-out").forEach(el => {
+            if (el.innerText?.includes("Switch to this voice channel")) {
+                el.setAttribute("data-whisper-switch", "");
+            }
+        });
+    }
+
+    function unstampSwitchCard() {
+        document.querySelectorAll("[data-whisper-switch]")
+            .forEach(el => el.removeAttribute("data-whisper-switch"));
+    }
+
     function enforceHidden() {
         if (!isDM()) {
             restoreVoiceWrapper();
+            unstampSwitchCard();
             return;
         }
         if (findActiveCall()) return;
         applyCSS();
+        stampSwitchCard();
     }
 
     const observer = new MutationObserver(() => {
