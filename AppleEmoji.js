@@ -46,7 +46,7 @@ return null;
 function convert(img){
 if(!img||!img.src)return;
 
-const m=img.src.match(/\/emoji\/twemoji\/([0-9a-f-]+)\.svg(?:\?v=\d+)?$/i);
+const m=img.src.match(/\/emoji\/[^\/]+\/([0-9a-f\-]+)\.(svg|png)/i);
 if(!m)return;
 
 const file=lookup(m[1]);
