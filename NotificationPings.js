@@ -5,16 +5,46 @@
     const targetNode = document.documentElement;
     const config = { childList: true, subtree: true };
 
-    function getNotiSound() {
-        return localStorage.getItem('avia-noti-sound') || '';
+    const STORAGE_KEY = "avia_custom_sounds";
+
+    const SOUND_DEFS = [
+        { key: "message", label: "Message Received", pattern: /\/assets\/message_sound-2-?[^/]*\.ogg(\?.*)?$/i },
+        { key: "mute", label: "Mute", pattern: /\/assets\/mute-[^/]*\.ogg(\?.*)?$/i },
+        { key: "unmute", label: "Unmute", pattern: /\/assets\/unmute-[^/]*\.ogg(\?.*)?$/i },
+        { key: "deafen", label: "Deafen", pattern: /\/assets\/deafen-[^/]*\.ogg(\?.*)?$/i },
+        { key: "undeafen", label: "Undeafen", pattern: /\/assets\/undeafen-[^/]*\.ogg(\?.*)?$/i },
+        { key: "user_join_voice", label: "User Join Voice", pattern: /\/assets\/user_join_voice-[^/]*\.ogg(\?.*)?$/i },
+        { key: "user_leave_voice", label: "User Leave Voice", pattern: /\/assets\/user_leave_voice-[^/]*\.ogg(\?.*)?$/i },
+        { key: "stream_start", label: "Stream Start", pattern: /\/assets\/stream_start-[^/]*\.ogg(\?.*)?$/i },
+        { key: "stream_end", label: "Stream End", pattern: /\/assets\/stream_end-[^/]*\.ogg(\?.*)?$/i }
+    ];
+
+    function getSoundData() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }
+        catch { return {}; }
     }
-    function setNotiSound(url) {
-        localStorage.setItem('avia-noti-sound', url);
+    function setSoundData(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
+    function getSoundEntry(key) {
+        const data = getSoundData();
+        return data[key] || null;
+    }
+    function setSoundEntry(key, dataUrl, name) {
+        const data = getSoundData();
+        data[key] = { dataUrl, name };
+        setSoundData(data);
+    }
+    function removeSoundEntry(key) {
+        const data = getSoundData();
+        delete data[key];
+        setSoundData(data);
+    }
+
     function playNotiSound() {
-        const url = getNotiSound();
-        if (!url) return;
-        new Audio(url).play().catch(e => console.warn('Avia: audio play failed', e));
+        const entry = getSoundEntry("message");
+        if (!entry) return;
+        new Audio(entry.dataUrl).play().catch(e => console.warn('Avia: audio play failed', e));
     }
 
     if (!window.__AVIA_NOTI_HOOKED__) {
@@ -33,6 +63,49 @@
 
         window.Notification = PatchedNotification;
         console.log("Avia: Notification constructor hooked");
+    }
+
+    function resolveAudioSrc(url) {
+        if (typeof url !== 'string') return url;
+        for (const def of SOUND_DEFS) {
+            if (def.pattern.test(url)) {
+                const entry = getSoundEntry(def.key);
+                if (entry) return entry.dataUrl;
+                return url;
+            }
+        }
+        return url;
+    }
+
+    if (!window.__AVIA_SOUND_AUDIO_HOOKED__) {
+        window.__AVIA_SOUND_AUDIO_HOOKED__ = true;
+
+        const _OriginalAudio = window.Audio;
+        function PatchedAudio(src) {
+            const resolved = resolveAudioSrc(src);
+            return new _OriginalAudio(resolved);
+        }
+        PatchedAudio.prototype = _OriginalAudio.prototype;
+        window.Audio = PatchedAudio;
+
+        const srcDescriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
+        if (srcDescriptor && srcDescriptor.set) {
+            Object.defineProperty(HTMLMediaElement.prototype, 'src', {
+                get: srcDescriptor.get,
+                set: function (value) {
+                    srcDescriptor.set.call(this, resolveAudioSrc(value));
+                },
+                configurable: true
+            });
+        }
+
+        const originalSetAttribute = Element.prototype.setAttribute;
+        Element.prototype.setAttribute = function (name, value) {
+            if (this instanceof HTMLMediaElement && name === 'src') {
+                value = resolveAudioSrc(value);
+            }
+            return originalSetAttribute.call(this, name, value);
+        };
     }
 
     let myId = null;
@@ -67,33 +140,6 @@
     window.WebSocket.prototype = window.__AVIA_WS_ORIGINAL__.prototype;
     console.log("Avia: WebSocket wrapped, waiting for next connection...");
 
-    function styleInput(input) {
-        input.style.padding = '6px 8px';
-        input.style.borderRadius = '8px';
-        input.style.border = '1px solid rgba(255,255,255,0.1)';
-        input.style.background = 'rgba(255,255,255,0.05)';
-        input.style.color = '#fff';
-        input.style.flex = '1';
-        input.style.minWidth = '0';
-    }
-
-    function enableDrag(panel, header) {
-        let isDragging = false, offsetX, offsetY;
-        header.addEventListener('mousedown', e => {
-            isDragging = true;
-            offsetX = e.clientX - panel.offsetLeft;
-            offsetY = e.clientY - panel.offsetTop;
-        });
-        document.addEventListener('mouseup', () => isDragging = false);
-        document.addEventListener('mousemove', e => {
-            if (!isDragging) return;
-            panel.style.left = (e.clientX - offsetX) + 'px';
-            panel.style.top = (e.clientY - offsetY) + 'px';
-            panel.style.right = 'auto';
-            panel.style.bottom = 'auto';
-        });
-    }
-
     function setIcon(button) {
         const oldSvg = button.querySelector('svg');
         if (oldSvg) oldSvg.remove();
@@ -110,125 +156,280 @@
         button.insertBefore(svg, button.firstChild);
     }
 
-    function togglePanel() {
-        let panel = document.getElementById('avia-noti-sounds-panel');
-        if (panel) {
-            panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
-            return;
-        }
-
-        panel = document.createElement('div');
-        panel.id = 'avia-noti-sounds-panel';
-        Object.assign(panel.style, {
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            width: '340px',
-            background: 'var(--md-sys-color-surface, #1e1e1e)',
-            color: 'var(--md-sys-color-on-surface, #fff)',
-            borderRadius: '16px',
-            boxShadow: '0 8px 28px rgba(0,0,0,0.35)',
-            zIndex: '999999',
+    function buildSoundRow(def, refreshAll) {
+        const row = document.createElement('div');
+        Object.assign(row.style, {
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
-            border: '1px solid rgba(255,255,255,0.08)',
-            backdropFilter: 'blur(12px)',
+            gap: '8px',
+            padding: '10px 12px',
+            borderRadius: '12px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            flex: '1 1 0',
+            minWidth: '0',
+            boxSizing: 'border-box'
         });
 
-        const header = document.createElement('div');
-        header.textContent = 'Notification Sound';
-        Object.assign(header.style, {
-            padding: '12px 16px',
-            fontWeight: '600',
-            fontSize: '14px',
-            background: 'var(--md-sys-color-surface-container, rgba(255,255,255,0.04))',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            cursor: 'move',
-            userSelect: 'none',
-        });
-
-        const closeBtn = document.createElement('div');
-        closeBtn.textContent = '✕';
-        Object.assign(closeBtn.style, {
-            position: 'absolute',
-            top: '10px',
-            right: '14px',
-            cursor: 'pointer',
-            opacity: '0.6',
-            fontSize: '14px',
-        });
-        closeBtn.onclick = () => panel.style.display = 'none';
-
-        const body = document.createElement('div');
-        Object.assign(body.style, {
-            padding: '14px 16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-        });
+        const labelWrap = document.createElement('div');
+        Object.assign(labelWrap.style, { display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '0', flex: '1' });
 
         const label = document.createElement('div');
-        label.textContent = 'Sound URL (plays on DM or mention)';
-        label.style.fontSize = '12px';
-        label.style.opacity = '0.6';
+        label.textContent = def.label;
+        Object.assign(label.style, { fontSize: '0.85rem', fontWeight: '600', color: 'var(--md-sys-color-on-surface, #fff)' });
 
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.gap = '8px';
-        row.style.alignItems = 'center';
-
-        const urlInput = document.createElement('input');
-        urlInput.placeholder = 'https://example.com/sound.mp3';
-        urlInput.value = getNotiSound();
-        styleInput(urlInput);
-
-        const saveBtn = document.createElement('button');
-        saveBtn.textContent = 'Save';
-        Object.assign(saveBtn.style, {
-            padding: '6px 12px',
-            borderRadius: '8px',
-            border: 'none',
-            background: 'var(--md-sys-color-primary, #7b6af0)',
-            color: '#fff',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '13px',
-            flexShrink: '0',
+        const statusLine = document.createElement('div');
+        Object.assign(statusLine.style, {
+            fontSize: '0.7rem',
+            opacity: '0.45',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
         });
-        saveBtn.onclick = () => {
-            setNotiSound(urlInput.value.trim());
-            saveBtn.textContent = 'Saved!';
-            setTimeout(() => saveBtn.textContent = 'Save', 1500);
+
+        function refreshStatus() {
+            const entry = getSoundEntry(def.key);
+            statusLine.textContent = entry ? entry.name : 'Using default sound';
+        }
+        refreshStatus();
+
+        labelWrap.appendChild(label);
+        labelWrap.appendChild(statusLine);
+
+        const btnGroup = document.createElement('div');
+        Object.assign(btnGroup.style, { display: 'flex', gap: '6px', flexShrink: '0', flexWrap: 'wrap', width: '100%' });
+
+        const importBtn = document.createElement('button');
+        importBtn.className = 'avia-sound-action-btn';
+        importBtn.textContent = 'Import';
+        Object.assign(importBtn.style, {
+            background: 'var(--md-sys-color-primary, rgba(103,80,164,0.9))',
+            color: '#fff',
+            flex: '1',
+            minWidth: '0'
+        });
+
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.ogg,audio/ogg';
+        fileInput.style.display = 'none';
+
+        importBtn.onclick = () => fileInput.click();
+
+        fileInput.onchange = () => {
+            const f = fileInput.files[0];
+            if (!f) return;
+            if (!f.name.toLowerCase().endsWith('.ogg')) {
+                fileInput.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                setSoundEntry(def.key, reader.result, f.name);
+                refreshStatus();
+                fileInput.value = '';
+            };
+            reader.readAsDataURL(f);
         };
 
         const testBtn = document.createElement('button');
-        testBtn.textContent = '🔊 Test';
+        testBtn.className = 'avia-sound-action-btn avia-sound-icon-btn';
         Object.assign(testBtn.style, {
-            padding: '6px 10px',
-            borderRadius: '8px',
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-            color: '#fff',
-            cursor: 'pointer',
-            fontSize: '13px',
+            color: 'var(--md-sys-color-primary, #cfbcff)',
+            background: 'transparent'
         });
+        const testIcon = document.createElement('span');
+        testIcon.className = 'material-symbols-outlined';
+        testIcon.textContent = 'volume_up';
+        testIcon.style.cssText = "font-size:18px;display:block;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0;";
+        testBtn.appendChild(testIcon);
         testBtn.onclick = () => {
-            const url = urlInput.value.trim();
-            if (!url) return;
-            new Audio(url).play();
+            const entry = getSoundEntry(def.key);
+            if (!entry) return;
+            new Audio(entry.dataUrl).play();
         };
 
-        row.appendChild(urlInput);
-        row.appendChild(saveBtn);
-        body.appendChild(label);
-        body.appendChild(row);
-        body.appendChild(testBtn);
-        panel.appendChild(header);
-        panel.appendChild(closeBtn);
-        panel.appendChild(body);
-        document.body.appendChild(panel);
-        enableDrag(panel, header);
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'avia-sound-action-btn avia-sound-icon-btn';
+        removeBtn.textContent = '✕';
+        Object.assign(removeBtn.style, {
+            color: 'var(--md-sys-color-error, #f2b8b8)',
+            background: 'transparent'
+        });
+        removeBtn.onclick = () => {
+            removeSoundEntry(def.key);
+            refreshStatus();
+        };
+
+        btnGroup.appendChild(testBtn);
+        btnGroup.appendChild(importBtn);
+        btnGroup.appendChild(removeBtn);
+        btnGroup.appendChild(fileInput);
+
+        row.appendChild(labelWrap);
+        row.appendChild(btnGroup);
+
+        return row;
+    }
+
+    let __aviaSoundsModalOpening = false;
+
+    function showSoundsModal() {
+        if (document.getElementById('avia-sounds-modal-scrim')) return;
+        if (__aviaSoundsModalOpening) return;
+        __aviaSoundsModalOpening = true;
+        setTimeout(() => { __aviaSoundsModalOpening = false; }, 250);
+
+        const styleEl = document.createElement('style');
+        styleEl.id = 'avia-sounds-modal-styles';
+        styleEl.textContent = `
+            @keyframes avia-sounds-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes avia-sounds-modal-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+            #avia-sounds-modal-inner { animation: avia-sounds-modal-in 0.15s forwards; }
+            .avia-sound-action-btn {
+                height: 32px;
+                border-radius: 999px;
+                border: none;
+                padding: 0 12px;
+                font-size: 0.75rem;
+                font-weight: 500;
+                letter-spacing: 0.015625rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: opacity 0.15s;
+                font-family: inherit;
+            }
+            .avia-sound-action-btn:hover { opacity: 0.8; }
+            .avia-sound-icon-btn { width: 32px; padding: 0; font-size: 0.85rem; }
+            #avia-sounds-list::-webkit-scrollbar { display: none; }
+        `;
+        document.head.appendChild(styleEl);
+
+        const scrim = document.createElement('div');
+        scrim.id = 'avia-sounds-modal-scrim';
+        Object.assign(scrim.style, {
+            position: 'fixed',
+            top: '0', left: '0', right: '0', bottom: '0',
+            zIndex: '999999',
+            display: 'grid',
+            placeItems: 'center',
+            background: 'rgba(0,0,0,0.6)',
+            padding: '80px',
+            overflowY: 'auto',
+            animation: 'avia-sounds-scrim-in 0.1s forwards',
+            boxSizing: 'border-box'
+        });
+
+        let scrimClickArmed = false;
+        setTimeout(() => { scrimClickArmed = true; }, 50);
+
+        scrim.addEventListener('click', e => {
+            if (!scrimClickArmed) return;
+            if (e.target === scrim) {
+                scrim.remove();
+                styleEl.remove();
+            }
+        });
+
+        const modal = document.createElement('div');
+        modal.id = 'avia-sounds-modal-inner';
+        Object.assign(modal.style, {
+            padding: '24px',
+            minWidth: '340px',
+            maxWidth: '560px',
+            width: '100%',
+            borderRadius: '28px',
+            display: 'flex',
+            flexDirection: 'column',
+            color: 'var(--md-sys-color-on-surface, #fff)',
+            background: 'var(--md-sys-color-surface-container-high, #2b2b2f)',
+            boxSizing: 'border-box'
+        });
+
+        const title = document.createElement('span');
+        title.textContent = 'Notification Sounds';
+        Object.assign(title.style, {
+            lineHeight: '2rem',
+            fontSize: '1.5rem',
+            letterSpacing: '0',
+            fontWeight: '400',
+            marginBottom: '18px'
+        });
+        modal.appendChild(title);
+
+        const list = document.createElement('div');
+        list.id = 'avia-sounds-list';
+        Object.assign(list.style, {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginBottom: '20px'
+        });
+
+        const GROUP_SIZE = 3;
+        for (let i = 0; i < SOUND_DEFS.length; i += GROUP_SIZE) {
+            const group = SOUND_DEFS.slice(i, i + GROUP_SIZE);
+            const groupRow = document.createElement('div');
+            Object.assign(groupRow.style, {
+                display: 'flex',
+                gap: '8px',
+                width: '100%',
+                boxSizing: 'border-box'
+            });
+            group.forEach(def => {
+                groupRow.appendChild(buildSoundRow(def));
+            });
+            list.appendChild(groupRow);
+        }
+
+        modal.appendChild(list);
+
+        const btnRow = document.createElement('div');
+        Object.assign(btnRow.style, {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            marginTop: '4px'
+        });
+
+        const subtitle = document.createElement('div');
+        subtitle.textContent = 'Only .ogg files are supported';
+        Object.assign(subtitle.style, {
+            fontSize: '0.8rem',
+            color: 'rgba(255,255,255,0.45)'
+        });
+        btnRow.appendChild(subtitle);
+
+        const closeModalBtn = document.createElement('button');
+        closeModalBtn.textContent = 'Close';
+        Object.assign(closeModalBtn.style, {
+            height: '40px',
+            borderRadius: '999px',
+            border: 'none',
+            padding: '0 16px',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            letterSpacing: '0.015625rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: 'inherit',
+            color: 'var(--md-sys-color-primary, #cfbcff)',
+            background: 'transparent'
+        });
+        closeModalBtn.onmouseenter = () => closeModalBtn.style.opacity = '0.8';
+        closeModalBtn.onmouseleave = () => closeModalBtn.style.opacity = '1';
+        closeModalBtn.addEventListener('click', () => { scrim.remove(); styleEl.remove(); });
+
+        btnRow.appendChild(closeModalBtn);
+        modal.appendChild(btnRow);
+
+        scrim.appendChild(modal);
+        document.body.appendChild(scrim);
     }
 
     function injectSettingsButton() {
@@ -239,11 +440,26 @@
             btn.className = 'pos_relative min-w_0 d_flex ai_center p_6px_8px bdr_8px fw_500 me_12px fs_15px us_none trs_background-color_0.1s_ease-in-out c_var(--md-sys-color-on-surface) fill_var(--md-sys-color-on-surface) bg_unset [&_svg]:flex-sh_0';
             btn.innerHTML = `<md-ripple aria-hidden="true"></md-ripple><div class="d_flex ai_center gap_8px flex-g_1 min-w_0 pe_8px"><div class="min-w_0 d_flex flex-d_column"><div class="ov_hidden white-space_nowrap tov_ellipsis">(Avia) Notification Sound</div></div></div>`;
             setIcon(btn);
-            btn.onclick = togglePanel;
+            btn.onclick = showSoundsModal;
             plugins.parentElement.insertBefore(btn, plugins.nextSibling);
+        }
+    }
+
+    function registerWithAviaMenu() {
+        if (window.AviaMenu) {
+            window.AviaMenu.register({ id: "avia_noti_sounds", name: "Notification Sounds", icon: "volume_up", onClick: showSoundsModal });
+        } else {
+            const interval = setInterval(() => {
+                if (window.AviaMenu) {
+                    clearInterval(interval);
+                    window.AviaMenu.register({ id: "avia_noti_sounds", name: "Notification Sounds", icon: "volume_up", onClick: showSoundsModal });
+                }
+            }, 100);
         }
     }
 
     const observer = new MutationObserver(injectSettingsButton);
     observer.observe(targetNode, config);
+
+    registerWithAviaMenu();
 })();
