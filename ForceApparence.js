@@ -51,7 +51,7 @@ if(window.__AVIA_FORCE_APPEARANCE__)return;
 window.__AVIA_FORCE_APPEARANCE__=true;
 
 function setAppearanceLabel(root=document){
-const links=root.querySelectorAll("a.pos_relative.min-w_0.d_flex.ai_center");
+const links = root.querySelectorAll(".settings_sidebar .content a.button:not([id^='avia-']):not([id^='stoat-fake-'])");
 
 links.forEach(a=>{
 const svg=a.querySelector("svg");
