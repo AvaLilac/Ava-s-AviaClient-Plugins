@@ -2,6 +2,26 @@
     if (window.__ECHO__) return;
     window.__ECHO__ = true;
 
+    function injectHideDefaultSearchStyle() {
+        if (document.getElementById("avia-search-hide-default")) return;
+
+        const css = `
+@media (height <= 600px) or (width <= 840px) {
+    .app_body button[data-avia-search-btn] {
+        display: none;
+    }
+}`;
+
+        var style = document.createElement('style');
+        style.id = "avia-search-hide-default";
+        style.type = 'text/css';
+        if( style.styleSheet )
+            style.styleSheet.cssText = css;
+        else
+            style.appendChild(document.createTextNode(css));
+        document.head.appendChild(style);
+    }
+
     function injectHideStyle() {
         if (document.getElementById("avia-search-hide")) return;
         const style = document.createElement("style");
@@ -107,10 +127,12 @@
         if (!findInjectedBtn()) {
             injectHideStyle();
             injectSearchButton();
+            injectHideDefaultSearchStyle();
         }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
 
     injectSearchButton();
+    injectHideDefaultSearchStyle();
 })();
