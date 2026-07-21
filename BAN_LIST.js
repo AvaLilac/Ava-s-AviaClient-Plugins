@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/BAN_LIST.js
+  @VERSION: 1.0
+*/
+
 (function () {
     if (window.__BAN_LIST__) return;
     window.__BAN_LIST__ = true;
