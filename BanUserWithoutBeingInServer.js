@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/BanUserWithoutBeingInServer.js
+  @VERSION: 1.0
+*/
+
 (function () {
   if (window.__AVIA_BAN_USER__) return;
   window.__AVIA_BAN_USER__ = true;
