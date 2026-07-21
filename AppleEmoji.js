@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/AppleEmoji.js
+  @VERSION: 1.0
+*/
+
 (async function(){
 
 if(window.__AVIA_APPLE_EMOJI__)return;
