@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/copytoclipboard.js
+  @VERSION: 1.0
+*/
+
 (function () {
     if (window.__CLIPBOARD_COPY__) return;
     window.__CLIPBOARD_COPY__ = true;
