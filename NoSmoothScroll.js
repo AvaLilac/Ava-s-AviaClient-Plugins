@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/NoSmoothScroll.js
+  @VERSION: 1.0
+*/
+
 (function () {
     if (window.__noSmoothScroll) return;
     window.__noSmoothScroll = true;
