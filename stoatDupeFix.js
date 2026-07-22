@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/stoatDupeFix.js
+  @VERSION: 1.0
+*/
+
 (function () {
   if (window.__stoatDedupeFix) return;
   window.__stoatDedupeFix = true;
