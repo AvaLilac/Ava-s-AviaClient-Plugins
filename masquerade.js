@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/masquerade.js
+  @VERSION: 1.0
+*/
+
 (function(){
 
 /* --- Impersonate.js --- */
