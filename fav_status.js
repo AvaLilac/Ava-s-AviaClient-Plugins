@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/fav_status.js
+  @VERSION: 1.0
+*/
+
 (function () {
     if (window.__FAV_STATUSES__) return;
     window.__FAV_STATUSES__ = true;
