@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/UNSENT_MESSAGE_TOOLBAR.js
+  @VERSION: 1.0
+*/
+
 (function () {
     if (window.__UNSENT_MESSAGE_TOOLBAR__) return;
     window.__UNSENT_MESSAGE_TOOLBAR__ = true;
