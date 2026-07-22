@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/NotificationPings.js
+  @VERSION: 1.0
+*/
+
 (function() {
     if (window.__AVIA_NOTI_SOUNDS__) return;
     window.__AVIA_NOTI_SOUNDS__ = true;
