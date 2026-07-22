@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/timezonesV2.js
+  @VERSION: 1.0
+*/
+
 (function () {
 
 if (window.__AVIA_TIMEZONES__) return;
