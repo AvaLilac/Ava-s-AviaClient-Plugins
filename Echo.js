@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/Echo.js
+  @VERSION: 1.0
+*/
+
 (function () {
     if (window.__ECHO__) return;
     window.__ECHO__ = true;
