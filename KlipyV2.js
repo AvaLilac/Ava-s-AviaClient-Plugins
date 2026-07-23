@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/KlipyV2.js
+  @VERSION: 1.0
+*/
+
 (function () {
     if (window.__KlipyV2__) return;
     window.__KlipyV2__ = true;
