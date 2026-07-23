@@ -1,11 +1,14 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/KlipyV2.js
-  @VERSION: 1.0
+  @VERSION: 1.1
 */
 
 (function () {
     if (window.__KlipyV2__) return;
     window.__KlipyV2__ = true;
+
+    const GIF_LOAD_LIMIT = 100; // 100 is the max Gif's for search. Enter more then 100 and it will default to 100.
+    const TRENDING_LOAD_LIMIT = 100; // Trending Doesn't appear to have a limit. If you find a limit. Send me a ping. im not counting every card. So you can set this to whatever
 
     const SETTINGS_KEY = "KlipyAPIKey";
 
@@ -141,35 +144,55 @@
         return jsonResponse(normalizeCategoriesPayload(json));
     }
 
+    const KLIPY_PAGE_SIZE = 100;
+    const EFFECTIVE_GIF_LIMIT = Math.min(GIF_LOAD_LIMIT, KLIPY_PAGE_SIZE);
+
+    async function fetchKlipyPaged(path, baseParams, targetLimit) {
+        let collected = [];
+        let pos = baseParams.pos || "";
+        let nextCursor = "";
+        let guard = 0;
+        while (collected.length < targetLimit && guard < 20) {
+            guard++;
+            const remaining = targetLimit - collected.length;
+            const params = Object.assign({}, baseParams, { limit: String(Math.min(remaining, KLIPY_PAGE_SIZE)) });
+            if (pos) params.pos = pos; else delete params.pos;
+            const target = buildKlipyUrl(path, params);
+            const res = await fetch(target, { headers: { Accept: "application/json" } });
+            const json = await res.json();
+            const norm = normalizeSearchPayload(json);
+            if (!norm.results.length) { nextCursor = ""; break; }
+            collected = collected.concat(norm.results);
+            nextCursor = norm.next || json.next || json.pos || "";
+            if (!nextCursor) break;
+            pos = nextCursor;
+        }
+        return { results: collected.slice(0, targetLimit), next: nextCursor };
+    }
+
     async function handleSearch(originalUrl) {
         const u = new URL(originalUrl);
         const locale = u.searchParams.get("locale") || "en_US";
         const query = u.searchParams.get("query") || u.searchParams.get("q") || "";
-        const limit = u.searchParams.get("limit") || "50";
         const pos = u.searchParams.get("pos") || u.searchParams.get("next") || "";
         const key = (settings.apiKey || "").trim();
         if (!key) return jsonResponse({ results: [] });
-        const params = { q: query, locale, limit, media_filter: MEDIA_FILTER, contentfilter: "off" };
-        if (pos) params.pos = pos;
-        const target = buildKlipyUrl("search", params);
-        const res = await fetch(target, { headers: { Accept: "application/json" } });
-        const json = await res.json();
-        return jsonResponse(normalizeSearchPayload(json));
+        const baseParams = { q: query, locale, media_filter: MEDIA_FILTER, contentfilter: "off" };
+        if (pos) baseParams.pos = pos;
+        const payload = await fetchKlipyPaged("search", baseParams, EFFECTIVE_GIF_LIMIT);
+        return jsonResponse(payload);
     }
 
     async function handleTrending(originalUrl) {
         const u = new URL(originalUrl);
         const locale = u.searchParams.get("locale") || "en_US";
-        const limit = u.searchParams.get("limit") || "50";
         const pos = u.searchParams.get("pos") || u.searchParams.get("next") || "";
         const key = (settings.apiKey || "").trim();
         if (!key) return jsonResponse({ results: [] });
-        const params = { locale, limit, media_filter: MEDIA_FILTER, contentfilter: "off" };
-        if (pos) params.pos = pos;
-        const target = buildKlipyUrl("featured", params);
-        const res = await fetch(target, { headers: { Accept: "application/json" } });
-        const json = await res.json();
-        return jsonResponse(normalizeSearchPayload(json));
+        const baseParams = { locale, media_filter: MEDIA_FILTER, contentfilter: "off" };
+        if (pos) baseParams.pos = pos;
+        const payload = await fetchKlipyPaged("featured", baseParams, TRENDING_LOAD_LIMIT);
+        return jsonResponse(payload);
     }
 
     function jsonResponse(body) {
