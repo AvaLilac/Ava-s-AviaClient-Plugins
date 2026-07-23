@@ -3,6 +3,13 @@
   @VERSION: 1.1
 */
 
+/*
+Version 1.1
+
+Allows you to set a limit onto how many gif's load at a time. GIF_LOAD_LIMIT is for search. 
+Setting it to 1 only loads One gif. Same with TRENDING_LOAD_LIMIT. Though that is for the trending page. 
+*/
+
 (function () {
     if (window.__KlipyV2__) return;
     window.__KlipyV2__ = true;
