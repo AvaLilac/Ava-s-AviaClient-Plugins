@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/Translate.js
-  @VERSION: 1.0
+  @VERSION: 1.1
 */
 
 (function () {
@@ -360,22 +360,23 @@ new MutationObserver(injectToolbarTranslate)
 injectToolbarTranslate();
 
 function injectSettingsButton() {
-
     if (document.getElementById("avia-translate-btn")) return;
-
     const gifSpan = [...document.querySelectorAll("span.material-symbols-outlined")]
         .find(s => s.textContent.trim() === "gif");
-
     if (!gifSpan) return;
-
-    const wrapper = gifSpan.closest("div.flex-sh_0");
+    const gifBtn = gifSpan.closest("button");
+    if (!gifBtn) return;
+    const wrapper = gifBtn.parentElement;
     if (!wrapper) return;
-
     const clone = wrapper.cloneNode(true);
     clone.id = "avia-translate-btn";
+    clone.style.position = "relative";
+
+    const btn = clone.querySelector("button");
+    btn.onclick = toggleTranslatePanel;
+    btn.style.position = "relative";
 
     clone.querySelector("span.material-symbols-outlined").textContent = "translate";
-    clone.querySelector("button").onclick = toggleTranslatePanel;
 
     wrapper.parentElement.insertBefore(clone, wrapper.nextSibling);
 }
