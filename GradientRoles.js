@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/GradientRoles.js
-  @VERSION: 1.0
+  @VERSION: 1.1
 */
 
 (function () {
@@ -39,19 +39,19 @@
 
   async function createGradientRole(serverId, name, gradient) {
     const cr = await apiReq(
-      `https://api.revolt.chat/servers/${serverId}/roles`,
+      `https://api.stoat.chat/servers/${serverId}/roles`,
       "POST", { name, colour: "#ff0000" }
     );
     if (!cr.ok || !cr.body?.id) return { ok: false, body: cr.body };
     return await apiReq(
-      `https://api.revolt.chat/servers/${serverId}/roles/${cr.body.id}`,
+      `https://api.stoat.chat/servers/${serverId}/roles/${cr.body.id}`,
       "PATCH", { colour: gradient }
     );
   }
 
   async function editRoleGradient(serverId, roleId, gradient) {
     return await apiReq(
-      `https://api.revolt.chat/servers/${serverId}/roles/${roleId}`,
+      `https://api.stoat.chat/servers/${serverId}/roles/${roleId}`,
       "PATCH", { colour: gradient }
     );
   }
@@ -1030,9 +1030,26 @@
     refresh();
   }
 
+  const CREATE_ROLE_ICON_PATH_PREFIX = "M22 9V7h-2v2h-2v2h2v2h2v-2h2V9";
+
+  function findLeaf(root, tag, text) {
+    return [...root.querySelectorAll(tag)]
+      .find(el => el.children.length === 0 && el.textContent.trim() === text) || null;
+  }
+
+  function findCreateRoleAnchor() {
+    const anchors = [...document.querySelectorAll("a")];
+    return anchors.find(a => {
+      const path = a.querySelector("svg path");
+      if (!path) return false;
+      const d = path.getAttribute("d") || "";
+      if (!d.startsWith(CREATE_ROLE_ICON_PATH_PREFIX)) return false;
+      return !!findLeaf(a, "div", "Create Role");
+    }) || null;
+  }
+
   function injectGradientRoleButton() {
-    const createBtn = [...document.querySelectorAll("a.pos_relative.cursor_pointer")]
-      .find(a => a.innerText.includes("Create Role") && !a.innerText.includes("Gradient"));
+    const createBtn = findCreateRoleAnchor();
     if (!createBtn) return;
 
     const parent = createBtn.parentElement;
@@ -1041,10 +1058,13 @@
     function makeClone(labelText, subLabelText, mode) {
       const clone = createBtn.cloneNode(true);
       clone.dataset.aviaGradientBtn = mode;
-      const labelDiv = clone.querySelector("div.flex-g_1 div");
+
+      const labelDiv = findLeaf(clone, "div", "Create Role");
       if (labelDiv) labelDiv.textContent = labelText;
-      const subText = clone.querySelector("span");
+
+      const subText = findLeaf(clone, "span", "Create a new role");
       if (subText) subText.textContent = subLabelText;
+
       clone.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
