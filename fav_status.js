@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/fav_status.js
-  @VERSION: 1.1
+  @VERSION: 1.0
 */
 
 (function () {
@@ -171,8 +171,6 @@
     }
 
     function injectIntoModal(modal) {
-
-        delete modal.dataset.aviaFavInjected;
         if (modal.dataset.aviaFavInjected) return;
         modal.dataset.aviaFavInjected = "1";
 
@@ -183,6 +181,8 @@
 
         const fieldParent = field.parentElement;
         if (!fieldParent) return;
+
+        let favSection;
 
         if (!fieldParent.classList.contains("avia-fav-input-row")) {
             const row = document.createElement("div");
@@ -217,8 +217,10 @@
         if (nativeInp) nativeInp.addEventListener("input", () => updateStarBtn(modal));
         field.addEventListener("input", () => updateStarBtn(modal));
 
-        const formParentDiv = field.closest("form")?.parentElement ?? field.closest("[class*='c_var']");
-        const favSection = document.createElement("div");
+        const formEl = field.closest("form");
+        const formParentDiv = formEl ? formEl.parentElement : null;
+
+        favSection = document.createElement("div");
         favSection.className = "avia-fav-section";
 
         if (formParentDiv && formParentDiv.parentElement) {
@@ -231,26 +233,39 @@
         updateStarBtn(modal);
     }
 
-    function isStatusModal(el) {
-        return el instanceof Element &&
-            el.querySelector && 
-            el.querySelector("mdui-text-field[name='text']") &&
-            (el.className?.includes("max-w_560px") || el.querySelector('[class*="max-w_560px"]'));
+    function isStatusField(field) {
+        if (!field) return false;
+        if (field.getAttribute("name") !== "text") return false;
+        const label = (field.getAttribute("label") || "").trim().toLowerCase();
+        return label === "custom status";
+    }
+
+    function findStatusDialog(root) {
+        if (!(root instanceof Element)) return null;
+        const check = (dialogEl) => {
+            const field = dialogEl.querySelector("mdui-text-field[name='text']");
+            return isStatusField(field) ? dialogEl : null;
+        };
+        if (root.classList?.contains("dialog")) {
+            const hit = check(root);
+            if (hit) return hit;
+        }
+        const nested = root.querySelectorAll ? root.querySelectorAll(".dialog") : [];
+        for (const candidate of nested) {
+            const hit = check(candidate);
+            if (hit) return hit;
+        }
+        const field = root.querySelector ? root.querySelector("mdui-text-field[name='text']") : null;
+        if (isStatusField(field)) {
+            const dialogAncestor = field.closest(".dialog");
+            if (dialogAncestor) return dialogAncestor;
+        }
+        return null;
     }
 
     function findAndInject(root) {
-
-        if (root instanceof Element) {
-            if (root.className?.includes?.("max-w_560px") && root.querySelector("mdui-text-field[name='text']")) {
-                injectIntoModal(root);
-                return;
-            }
-
-            const candidate = root.querySelector('[class*="max-w_560px"]');
-            if (candidate && candidate.querySelector("mdui-text-field[name='text']")) {
-                injectIntoModal(candidate);
-            }
-        }
+        const modal = findStatusDialog(root);
+        if (modal) injectIntoModal(modal);
     }
 
     let pendingNodes = [];
@@ -280,9 +295,6 @@
 
     observer.observe(document.body, { childList: true, subtree: true });
 
-    const existing = document.querySelector('[class*="max-w_560px"]');
-    if (existing && existing.querySelector("mdui-text-field[name='text']")) {
-        injectIntoModal(existing);
-    }
+    findAndInject(document.body);
 
 })();
