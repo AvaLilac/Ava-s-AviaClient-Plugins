@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/NotificationPings.js
-  @VERSION: 1.0
+  @VERSION: 1.1
 */
 
 (function() {
@@ -438,16 +438,37 @@
     }
 
     function injectSettingsButton() {
-        const plugins = document.getElementById('stoat-fake-plugins');
-        if (plugins && !document.getElementById('avia-noti-sounds-btn')) {
-            const btn = document.createElement('a');
-            btn.id = 'avia-noti-sounds-btn';
-            btn.className = 'pos_relative min-w_0 d_flex ai_center p_6px_8px bdr_8px fw_500 me_12px fs_15px us_none trs_background-color_0.1s_ease-in-out c_var(--md-sys-color-on-surface) fill_var(--md-sys-color-on-surface) bg_unset [&_svg]:flex-sh_0';
-            btn.innerHTML = `<md-ripple aria-hidden="true"></md-ripple><div class="d_flex ai_center gap_8px flex-g_1 min-w_0 pe_8px"><div class="min-w_0 d_flex flex-d_column"><div class="ov_hidden white-space_nowrap tov_ellipsis">(Avia) Notification Sound</div></div></div>`;
-            setIcon(btn);
-            btn.onclick = showSoundsModal;
-            plugins.parentElement.insertBefore(btn, plugins.nextSibling);
-        }
+        if (document.getElementById('avia-noti-sounds-btn')) return;
+
+        const appearanceBtn = [...document.querySelectorAll(
+                `.settings_sidebar .content a.button:not(
+                    [id^='avia-']
+                ):not(
+                    [id^='stoat-fake-']
+                ):has(
+                    > div
+                    > svg
+                    > path[d^='M12 22C6.49 22']
+                )`
+            )].find((a) => {
+                const label = a.querySelector('div > svg + div > div');
+                if (label.textContent === "Appearance") return a;
+            });
+        if (!appearanceBtn) return;
+
+        const aviaPluginsBtn = document.getElementById('stoat-fake-plugins');
+        if (!aviaPluginsBtn) return;
+
+        const btn = appearanceBtn.cloneNode(true);
+        btn.id = 'avia-noti-sounds-btn';
+
+        const textNode = [...btn.querySelectorAll("div")].find(d => d.children.length === 0 && d.textContent.trim() === "Appearance");
+        if (textNode) textNode.textContent = "(Avia) Notification Sound";
+
+        setIcon(btn);
+        btn.onclick = showSoundsModal;
+
+        aviaPluginsBtn.parentElement.insertBefore(btn, aviaPluginsBtn.nextSibling);
     }
 
     function registerWithAviaMenu() {
