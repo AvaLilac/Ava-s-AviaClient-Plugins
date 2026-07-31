@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/Translate.js
-  @VERSION: 1.1
+  @VERSION: 1.2
 */
 
 (function () {
@@ -285,23 +285,30 @@ function toggleTranslatePanel() {
     document.body.appendChild(panel);
 }
 
+const KEBAB_ICON_PATH_PREFIX = "M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2m0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2m0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2";
+const TRANSLATE_ICON_PATH = "M12.87 15.07l-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.01 4.94L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7l1.62-4.33L19.12 17z";
+
+function findRefButton(toolbar) {
+    const path = [...toolbar.querySelectorAll("svg path")]
+        .find(p => (p.getAttribute("d") || "").startsWith(KEBAB_ICON_PATH_PREFIX));
+    if (!path) return null;
+    return path.closest("div");
+}
+
 function injectToolbarTranslate() {
 
     document.querySelectorAll(".Toolbar").forEach(toolbar => {
 
         if (toolbar.dataset.aviaTranslateAttached) return;
+
+        const refBtn = findRefButton(toolbar);
+        if (!refBtn) return;
+
         toolbar.dataset.aviaTranslateAttached = "true";
 
-        const btn = document.createElement("div");
-        btn.className = "cursor_pointer pos_relative p_var(--gap-sm)";
-
-        btn.innerHTML = `
-            <md-ripple aria-hidden="true"></md-ripple>
-            <span class="material-symbols-outlined"
-                  style="display:block;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0;">
-                translate
-            </span>
-        `;
+        const btn = refBtn.cloneNode(true);
+        const svg = btn.querySelector("svg");
+        if (svg) svg.innerHTML = `<path d="${TRANSLATE_ICON_PATH}"></path>`;
 
         btn.onclick = async (e) => {
             e.stopPropagation();
@@ -318,7 +325,9 @@ function injectToolbarTranslate() {
                 return;
             }
 
-            const messageParagraph = messageWrapper.querySelector('p[class*="[&>code]:flex-sh_0"]');
+            const siblingDivs = [...messageWrapper.children].filter(el => el.tagName === "DIV" && el !== toolbar);
+            const contentDiv = siblingDivs[siblingDivs.length - 1];
+            const messageParagraph = contentDiv ? contentDiv.querySelector("div > p") : null;
             if (!messageParagraph) return;
 
             const text = messageParagraph.innerText.trim();
