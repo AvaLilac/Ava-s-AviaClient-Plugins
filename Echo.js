@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/Echo.js
-  @VERSION: 1.1
+  @VERSION: 1.2
 */
 
 (function () {
@@ -31,7 +31,7 @@
         if (document.getElementById("avia-search-hide")) return;
         const style = document.createElement("style");
         style.id = "avia-search-hide";
-        style.textContent = `input[placeholder="Search messages..."] { display: none !important; }`;
+        style.textContent = `.app_body > div > div:first-child > input:last-child { display: none !important; }`;
         document.head.appendChild(style);
     }
 
@@ -42,11 +42,18 @@
     injectHideStyle();
 
     function findSearchInput() {
-        return document.querySelector('input[placeholder="Search messages..."]');
+        const candidates = document.querySelectorAll('.app_body > div > div:first-child > input:last-child');
+        for (const el of candidates) {
+            if (el.offsetParent !== null) return el;
+        }
+        return candidates[0] || null;
     }
 
     function findPinButton() {
-        return document.querySelector('button[aria-label="View pinned messages"]');
+        return document.querySelector(
+            `.app_body > div > div:first-child
+                > button[aria-label]:has(> svg > path[d^='m640-480 80 80v80H520v240l-40'])`
+        );
     }
 
     function findInjectedBtn() {
