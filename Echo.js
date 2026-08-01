@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/Echo.js
-  @VERSION: 1.0
+  @VERSION: 1.1
 */
 
 (function () {
