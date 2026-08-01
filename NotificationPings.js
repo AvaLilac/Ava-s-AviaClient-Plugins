@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/NotificationPings.js
-  @VERSION: 1.1
+  @VERSION: 1.2
 */
 
 (function() {
@@ -45,11 +45,28 @@
         delete data[key];
         setSoundData(data);
     }
+    function getVolume() {
+        const data = getSoundData();
+        return typeof data.volume === 'number' ? data.volume : 1;
+    }
+    function setVolume(v) {
+        const data = getSoundData();
+        data.volume = v;
+        setSoundData(data);
+    }
+    function getPerceptualVolume() {
+        const v = Math.max(0, Math.min(1, getVolume()));
+        if (v <= 0) return 0;
+        const floor = 0.02;
+        return floor + (1 - floor) * Math.pow(v, 1.662);
+    }
 
     function playNotiSound() {
         const entry = getSoundEntry("message");
         if (!entry) return;
-        new Audio(entry.dataUrl).play().catch(e => console.warn('Avia: audio play failed', e));
+        const audio = new Audio(entry.dataUrl);
+        audio.volume = getPerceptualVolume();
+        audio.play().catch(e => console.warn('Avia: audio play failed', e));
     }
 
     if (!window.__AVIA_NOTI_HOOKED__) {
@@ -88,7 +105,9 @@
         const _OriginalAudio = window.Audio;
         function PatchedAudio(src) {
             const resolved = resolveAudioSrc(src);
-            return new _OriginalAudio(resolved);
+            const audio = new _OriginalAudio(resolved);
+            audio.volume = getPerceptualVolume();
+            return audio;
         }
         PatchedAudio.prototype = _OriginalAudio.prototype;
         window.Audio = PatchedAudio;
@@ -99,6 +118,7 @@
                 get: srcDescriptor.get,
                 set: function (value) {
                     srcDescriptor.set.call(this, resolveAudioSrc(value));
+                    try { this.volume = getPerceptualVolume(); } catch (_) {}
                 },
                 configurable: true
             });
@@ -108,6 +128,9 @@
         Element.prototype.setAttribute = function (name, value) {
             if (this instanceof HTMLMediaElement && name === 'src') {
                 value = resolveAudioSrc(value);
+                originalSetAttribute.call(this, name, value);
+                try { this.volume = getPerceptualVolume(); } catch (_) {}
+                return;
             }
             return originalSetAttribute.call(this, name, value);
         };
@@ -251,7 +274,9 @@
         testBtn.onclick = () => {
             const entry = getSoundEntry(def.key);
             if (!entry) return;
-            new Audio(entry.dataUrl).play();
+            const audio = new Audio(entry.dataUrl);
+            audio.volume = getPerceptualVolume();
+            audio.play();
         };
 
         const removeBtn = document.createElement('button');
@@ -309,6 +334,58 @@
             .avia-sound-action-btn:hover { opacity: 0.8; }
             .avia-sound-icon-btn { width: 32px; padding: 0; font-size: 0.85rem; }
             #avia-sounds-list::-webkit-scrollbar { display: none; }
+            .avia-volume-slider {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 96px;
+                height: 20px;
+                background: transparent;
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+            .avia-volume-slider::-webkit-slider-runnable-track {
+                height: 4px;
+                border-radius: 999px;
+                background: rgba(255,255,255,0.16);
+            }
+            .avia-volume-slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 14px;
+                height: 14px;
+                margin-top: -5px;
+                border-radius: 50%;
+                background: var(--md-sys-color-primary, #cfbcff);
+                border: none;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            }
+            .avia-volume-slider::-moz-range-track {
+                height: 4px;
+                border-radius: 999px;
+                background: rgba(255,255,255,0.16);
+            }
+            .avia-volume-slider::-moz-range-progress {
+                height: 4px;
+                border-radius: 999px;
+                background: var(--md-sys-color-primary, #cfbcff);
+            }
+            .avia-volume-slider::-moz-range-thumb {
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                background: var(--md-sys-color-primary, #cfbcff);
+                border: none;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            }
+            .avia-volume-pct {
+                font-size: 0.75rem;
+                font-variant-numeric: tabular-nums;
+                color: rgba(255,255,255,0.6);
+                min-width: 30px;
+                text-align: right;
+                flex-shrink: 0;
+                cursor: default;
+            }
         `;
         document.head.appendChild(styleEl);
 
@@ -360,9 +437,18 @@
             fontSize: '1.5rem',
             letterSpacing: '0',
             fontWeight: '400',
-            marginBottom: '18px'
+            marginBottom: '6px'
         });
         modal.appendChild(title);
+
+        const subtitle = document.createElement('div');
+        subtitle.textContent = 'Only .ogg files are supported';
+        Object.assign(subtitle.style, {
+            fontSize: '0.8rem',
+            color: 'rgba(255,255,255,0.45)',
+            marginBottom: '18px'
+        });
+        modal.appendChild(subtitle);
 
         const list = document.createElement('div');
         list.id = 'avia-sounds-list';
@@ -400,13 +486,44 @@
             marginTop: '4px'
         });
 
-        const subtitle = document.createElement('div');
-        subtitle.textContent = 'Only .ogg files are supported';
-        Object.assign(subtitle.style, {
-            fontSize: '0.8rem',
-            color: 'rgba(255,255,255,0.45)'
+        const volumeWrap = document.createElement('div');
+        Object.assign(volumeWrap.style, {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flexShrink: '0'
         });
-        btnRow.appendChild(subtitle);
+
+        const volumeIcon = document.createElement('span');
+        volumeIcon.className = 'material-symbols-outlined';
+        volumeIcon.textContent = 'volume_up';
+        volumeIcon.style.cssText = "font-size:20px;color:rgba(255,255,255,0.6);flex-shrink:0;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0;";
+
+        const volumeSlider = document.createElement('input');
+        volumeSlider.type = 'range';
+        volumeSlider.min = '0';
+        volumeSlider.max = '100';
+        const initialVolPct = Math.round(getVolume() * 100);
+        volumeSlider.value = String(initialVolPct);
+        volumeSlider.className = 'avia-volume-slider';
+        volumeSlider.title = initialVolPct + '%';
+
+        const volumePct = document.createElement('span');
+        volumePct.className = 'avia-volume-pct';
+        volumePct.textContent = initialVolPct + '%';
+        volumePct.title = 'Notification sound volume';
+
+        volumeSlider.addEventListener('input', () => {
+            const v = Number(volumeSlider.value);
+            setVolume(v / 100);
+            volumePct.textContent = v + '%';
+            volumeSlider.title = v + '%';
+        });
+
+        volumeWrap.appendChild(volumeIcon);
+        volumeWrap.appendChild(volumeSlider);
+        volumeWrap.appendChild(volumePct);
+        btnRow.appendChild(volumeWrap);
 
         const closeModalBtn = document.createElement('button');
         closeModalBtn.textContent = 'Close';
