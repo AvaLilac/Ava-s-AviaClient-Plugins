@@ -60,7 +60,7 @@
         searchTooltip = document.createElement("div");
         searchTooltip.style.cssText = "position:fixed;z-index:999;pointer-events:none;";
         const inner = document.createElement("div");
-        inner.className = "c_white bg_black p_var(--gap-md) bdr_var(--borderRadius-md) lh_0.875rem fs_0.6875rem ls_0.03125rem fw_500";
+        inner.style.cssText = "color: white; background-color: black; padding: var(--gap-md); border-radius: var(--borderRadius-md); line-height: 0.875rem; font-size: 0.6875rem; letter-spacing: 0.03125rem; font-weight: 500";
         inner.textContent = "Search";
         searchTooltip.appendChild(inner);
         document.body.appendChild(searchTooltip);
