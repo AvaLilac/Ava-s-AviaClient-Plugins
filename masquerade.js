@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/masquerade.js
-  @VERSION: 1.2
+  @VERSION: 1.3
 */
 
 (function(){
@@ -346,7 +346,7 @@ if(window.__US_BUILDER_IMPERSONATE_JS__){return;}window.__US_BUILDER_IMPERSONATE
     const profilebutton = document.querySelector(`a:has(svg>path[d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2M7.35 18.5C8.66 17.56 10.26 17 12 17s3.34.56 4.65 1.5c-1.31.94-2.91 1.5-4.65 1.5s-3.34-.56-4.65-1.5m10.79-1.38a9.95 9.95 0 0 0-12.28 0A7.96 7.96 0 0 1 4 12c0-4.42 3.58-8 8-8s8 3.58 8 8c0 1.95-.7 3.73-1.86 5.12'])`)
     const addfriendbutton = document.querySelector(`a:has(svg>path[d='M20 9V6h-2v3h-3v2h3v3h2v-3h3V9zM9 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4m0-6c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2m6.39 8.56C13.71 13.7 11.53 13 9 13s-4.71.7-6.39 1.56A2.97 2.97 0 0 0 1 17.22V20h16v-2.78c0-1.12-.61-2.15-1.61-2.66M15 18H3v-.78c0-.38.2-.72.52-.88C4.71 15.73 6.63 15 9 15s4.29.73 5.48 1.34c.32.16.52.5.52.88z'])`)
     const messagebutton = document.querySelector(`a:has(svg>path[d='M4 4h16v12H5.17L4 17.17zm0-2c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm2 10h8v2H6zm0-3h12v2H6zm0-3h12v2H6z'])`)
-    if((profilebutton||messagebutton||addfriendbutton||(username&&copyuseridbutton))&&!document.getElementById('impersonate')){
+    if((profilebutton||(messagebutton&&!messagebutton.href)||addfriendbutton||(username&&copyuseridbutton))&&!document.getElementById('impersonate')){
       let impersonatebutton;
       let button;
       if(profilebutton){
