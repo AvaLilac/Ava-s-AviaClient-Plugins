@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/timezonesV2.js
-  @VERSION: 1.1
+  @VERSION: 1.2
 */
 
 (function() {
@@ -174,7 +174,7 @@
     }
 
     function applyTimezones() {
-        document.querySelectorAll("time[datetime]").forEach(el => {
+        document.querySelectorAll(".app_body .group time[datetime]").forEach(el => {
             const text = el.textContent.trim();
             const isMessageTime = text.includes("Today") || text.includes("Yesterday") || text.includes(" at ");
             const isDateSeparator = /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(text);
@@ -233,7 +233,7 @@
     }
 
     function invalidateAll() {
-        document.querySelectorAll("time[datetime]").forEach(el => {
+        document.querySelectorAll(".app_body .group time[datetime]").forEach(el => {
             delete el.dataset.aviaTimezoneDone;
         });
         applyTimezones();
