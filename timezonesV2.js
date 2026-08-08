@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/timezonesV2.js
-  @VERSION: 1.2
+  @VERSION: 1.1
 */
 
 (function() {
