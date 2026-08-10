@@ -1,9 +1,12 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/KlipyV2.js
-  @VERSION: 1.1
+  @VERSION: 1.2
 */
 
 /*
+Version 1.2
+Fix the plugin after stoat update broke everything
+
 Version 1.1
 
 Allows you to set a limit onto how many gif's load at a time. GIF_LOAD_LIMIT is for search. 
@@ -284,93 +287,78 @@ Setting it to 1 only loads One gif. Same with TRENDING_LOAD_LIMIT. Though that i
     HijackXHR.prototype = RealXHR.prototype;
     window.XMLHttpRequest = HijackXHR;
 
-    function closeKeyDialog() {
-        const scrim = document.getElementById("gifbox-klipy-key-scrim");
-        if (scrim) scrim.remove();
-    }
-
     function openKeyDialog() {
-        if (document.getElementById("gifbox-klipy-key-scrim")) return;
+        if (document.getElementById('avia-klipy-key-scrim')) return;
 
-        const scrim = document.createElement("div");
-        scrim.id = "gifbox-klipy-key-scrim";
-        scrim.className = "top_0 left_0 right_0 bottom_0 pos_fixed z_998 max-h_100% d_grid us_none place-items_center pointer-events_all anim-n_scrimFadeIn anim-dur_0.1s anim-fm_forwards trs_var(--transitions-medium)_all p_80px phone:p_30px ov-y_auto --background_rgba(0,_0,_0,_0.6) dialog_scrim";
-        scrim.style.setProperty("--background", "rgba(0, 0, 0, 0.6)");
-        scrim.addEventListener("click", e => { if (e.target === scrim) closeKeyDialog(); });
+        const backdrop = document.createElement('div');
+        backdrop.id = 'avia-klipy-key-scrim';
+        backdrop.style.cssText = `
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            position: fixed;
+            z-index: 999982;
+            max-height: 100%;
+            display: grid;
+            user-select: none;
+            place-items: center;
+            pointer-events: all;
+            padding: 80px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.6);`;
 
-        const dialog = document.createElement("div");
-        dialog.className = "dialog";
-        dialog.style.opacity = "1";
-        dialog.style.setProperty("--motion-translateY", "0px");
-        dialog.style.transform = "translateY(var(--motion-translateY))";
+        backdrop.innerHTML = `
+          <div style="opacity: 1;">
+            <div style="padding: 24px; min-width: 280px; max-width: 560px; border-radius: 28px; display: flex; flex-direction: column; color: var(--md-sys-color-on-surface); background: var(--md-sys-color-surface-container-high);">
+              <span style="line-height: 2rem; font-size: 1.5rem; letter-spacing: 0; font-weight: 400; margin-block-end: 16px;">Klipy API Key</span>
+              <div style="color: var(--md-sys-color-on-surface-variant); line-height: 1.25rem; font-size: 0.875rem; letter-spacing: 0.015625rem; font-weight: 400;">
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <mdui-text-field id="klipy-key-input" variant="filled" type="password" name="apiKey" required label="Klipy API Key"></mdui-text-field>
+                </div>
+              </div>
+              <div style="gap: 8px; display: flex; justify-content: flex-end; margin-block-start: 24px;">
+                <button id="klipy-key-close-btn" type="button" style="line-height: 1.25rem; font-size: 0.875rem; letter-spacing: 0.015625rem; font-weight: 400; position: relative; padding-inline: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: inherit; cursor: pointer; border: none; transition: opacity 0.15s; height: 40px; border-radius: 9999px; background: none; color: var(--md-sys-color-primary);">
+                  <md-ripple aria-hidden="true"></md-ripple>Close
+                </button>
+                <button id="klipy-key-save-btn" type="button" disabled style="line-height: 1.25rem; font-size: 0.875rem; letter-spacing: 0.015625rem; font-weight: 400; position: relative; padding-inline: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: inherit; cursor: not-allowed; border: none; transition: opacity 0.15s; height: 40px; border-radius: 9999px; color: color-mix(in srgb, 38% var(--md-sys-color-on-surface), transparent); background: color-mix(in srgb, 10% var(--md-sys-color-on-surface), transparent);">
+                  <md-ripple aria-hidden="true"></md-ripple>Save
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
 
-        const card = document.createElement("div");
-        card.className = "p_24px min-w_280px max-w_560px bdr_28px d_flex flex-d_column c_var(--md-sys-color-on-surface) bg_var(--md-sys-color-surface-container-high)";
+        document.body.appendChild(backdrop);
 
-        const heading = document.createElement("span");
-        heading.className = "lh_2rem fs_1.5rem ls_0 fw_400 mbe_16px";
-        heading.textContent = "Klipy API Key";
+        const closeBtn = backdrop.querySelector('#klipy-key-close-btn');
+        const saveBtn = backdrop.querySelector('#klipy-key-save-btn');
+        const field = backdrop.querySelector('#klipy-key-input');
 
-        const body = document.createElement("div");
-        body.className = "c_var(--md-sys-color-on-surface-variant) ov-wrap_anywhere lh_1.25rem fs_0.875rem ls_0.015625rem fw_400";
-
-        const form = document.createElement("form");
-        const formInner = document.createElement("div");
-        formInner.className = "d_flex flex-d_column flex-g_initial m_0 ai_initial jc_initial gap_var(--gap-md)";
-
-        const field = document.createElement("mdui-text-field");
-        field.className = "cursor_text";
-        field.setAttribute("variant", "filled");
-        field.setAttribute("type", "password");
-        field.setAttribute("name", "apiKey");
-        field.setAttribute("required", "");
-        field.setAttribute("label", "Klipy API Key");
         field.value = settings.apiKey || "";
 
-        formInner.appendChild(field);
-        form.appendChild(formInner);
-        body.appendChild(form);
-
-        const actions = document.createElement("div");
-        actions.className = "gap_8px d_flex jc_end mbs_24px";
-
-        const closeBtn = document.createElement("button");
-        closeBtn.type = "button";
-        closeBtn.className = "ov-wrap_anywhere lh_1.25rem fs_0.875rem ls_0.015625rem fw_400 pos_relative px_16px flex-sh_0 d_flex ai_center jc_center ff_inherit cursor_pointer bd_none trs_var(--transitions-medium)_all c_var(--color) fill_var(--color) h_40px bdr_var(--borderRadius-full) --color_var(--md-sys-color-primary)";
-        closeBtn.innerHTML = '<md-ripple aria-hidden="true"></md-ripple>Close';
-        closeBtn.onclick = closeKeyDialog;
-
-        const saveBtn = document.createElement("button");
-        saveBtn.type = "button";
-        const enabledClass = "ov-wrap_anywhere lh_1.25rem fs_0.875rem ls_0.015625rem fw_400 pos_relative px_16px flex-sh_0 d_flex ai_center jc_center ff_inherit cursor_pointer bd_none trs_var(--transitions-medium)_all c_var(--color) fill_var(--color) h_40px bdr_var(--borderRadius-full) --color_var(--md-sys-color-on-primary) bg_var(--md-sys-color-primary)";
-        const disabledClass = "ov-wrap_anywhere lh_1.25rem fs_0.875rem ls_0.015625rem fw_400 pos_relative px_16px flex-sh_0 d_flex ai_center jc_center ff_inherit cursor_not-allowed bd_none trs_var(--transitions-medium)_all c_var(--color) fill_var(--color) h_40px bdr_var(--borderRadius-full) --color_color-mix(in_srgb,_38%_var(--md-sys-color-on-surface),_transparent) bg_color-mix(in_srgb,_10%_var(--md-sys-color-on-surface),_transparent)";
-        saveBtn.textContent = "Save";
+        function close() { backdrop.remove(); }
 
         function syncSaveState() {
             const hasValue = !!(field.value || "").trim();
             saveBtn.disabled = !hasValue;
-            saveBtn.className = hasValue ? enabledClass : disabledClass;
+            saveBtn.style.cursor = hasValue ? 'pointer' : 'not-allowed';
+            saveBtn.style.color = hasValue ? 'var(--md-sys-color-on-primary)' : 'color-mix(in srgb, 38% var(--md-sys-color-on-surface), transparent)';
+            saveBtn.style.background = hasValue ? 'var(--md-sys-color-primary)' : 'color-mix(in srgb, 10% var(--md-sys-color-on-surface), transparent)';
         }
         syncSaveState();
-        field.addEventListener("input", syncSaveState);
-        field.addEventListener("change", syncSaveState);
+        field.addEventListener('input', syncSaveState);
+        field.addEventListener('change', syncSaveState);
 
-        saveBtn.onclick = () => {
+        backdrop.addEventListener('click', e => { if (e.target === backdrop) close(); });
+        closeBtn.addEventListener('click', close);
+
+        saveBtn.addEventListener('click', () => {
             if (saveBtn.disabled) return;
             settings.apiKey = (field.value || "").trim();
             saveSettings(settings);
-            closeKeyDialog();
-        };
-
-        actions.appendChild(closeBtn);
-        actions.appendChild(saveBtn);
-
-        card.appendChild(heading);
-        card.appendChild(body);
-        card.appendChild(actions);
-        dialog.appendChild(card);
-        scrim.appendChild(dialog);
-        document.body.appendChild(scrim);
+            close();
+        });
     }
 
     function isGifMediaUrl(url) {
