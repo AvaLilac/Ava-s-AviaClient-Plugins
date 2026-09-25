@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/CharacterCounter.js
-  @VERSION: 1.0
+  @VERSION: 1.1
 */
 
 (function () {
@@ -8,11 +8,6 @@
   window.__Character_Counter__ = true;
 
   const MAX_CHARS = 2000;
-
-  function getGifVisible() {
-    return [...document.querySelectorAll("span.material-symbols-outlined")]
-      .some(s => s.textContent.trim() === "gif");
-  }
 
   function removeCounter() {
     const existing = document.getElementById("stoat-char-counter");
@@ -29,11 +24,6 @@
 
   function injectCounter(cmEditor) {
     if (!cmEditor) return;
-    if (!getGifVisible()) {
-      removeCounter();
-      return;
-    }
-
     if (document.getElementById("stoat-char-counter")) return;
 
     const host = getEditorHost(cmEditor);
@@ -47,7 +37,7 @@
     counter.id = "stoat-char-counter";
     counter.style.cssText = `
       position: absolute;
-      left: 12px;
+      right: 12px;
       bottom: 1px;
       z-index: 5;
       font-size: 0.7rem;
@@ -86,13 +76,7 @@
     if (!cmContent || cmContent.__charCounterHooked) return;
     cmContent.__charCounterHooked = true;
 
-    const cmEditor = cmContent.closest(".cm-editor");
-
     const sync = () => {
-      if (!getGifVisible()) {
-        removeCounter();
-        return;
-      }
       injectCounter(cmContent);
       updateCounter(getLength(cmContent));
     };
@@ -109,14 +93,10 @@
 
   const observer = new MutationObserver(() => {
     const cmContent = getEditor();
-
-    if (!getGifVisible()) {
-      removeCounter();
-      return;
-    }
-
     if (cmContent) {
       hookEditor(cmContent);
+    } else {
+      removeCounter();
     }
   });
 
