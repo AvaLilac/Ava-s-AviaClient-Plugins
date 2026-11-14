@@ -1,3 +1,7 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/FluxerPlugins/FavoriteStatuses.js
+  @VERSION: 1.0
+*/
 
 (function() {
     if (window.__FAVORITE_STATUSES__) return;
