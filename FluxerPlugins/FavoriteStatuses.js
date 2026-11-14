@@ -1,7 +1,8 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/FluxerPlugins/FavoriteStatuses.js
-  @VERSION: 1.0
+  @VERSION: 1.1
 */
+
 
 (function() {
     if (window.__FAVORITE_STATUSES__) return;
@@ -84,7 +85,7 @@
             }
 
             .avia-fav-star-btn:hover {
-                background: rgba(255,255,255,0.06);
+                background: var(--background-modifier-hover);
             }
 
             .avia-fav-list {
@@ -111,10 +112,19 @@
                 box-sizing: border-box;
                 width: 100%;
                 min-width: 0;
-                height: 40px;
-                min-height: 40px;
-                padding: 0 44px 0 12px;
+                height: 44px;
+                min-height: 44px;
+                padding: 10px 40px 10px 12px;
                 overflow: hidden;
+                background: var(--background-tertiary);
+                border: 0.8px solid var(--border-color);
+                border-radius: 8px;
+                color: var(--text-primary);
+                font-family: 'CustomFont1794698186364', sans-serif;
+                font-size: 14px;
+                font-style: normal;
+                font-weight: 400;
+                line-height: 20px;
                 white-space: nowrap;
                 cursor: default;
                 user-select: text;
@@ -127,6 +137,37 @@
                 overflow: hidden;
                 white-space: nowrap;
                 text-overflow: ellipsis;
+            }
+
+            .avia-fav-item-del {
+                position: absolute;
+                top: 50%;
+                right: 8px;
+                transform: translateY(-50%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 24px;
+                height: 24px;
+                padding: 0;
+                border: none;
+                border-radius: 4px;
+                background: transparent;
+                color: var(--text-secondary);
+                cursor: pointer;
+                transition: color 0.15s, background 0.15s;
+            }
+
+            .avia-fav-item-del:hover {
+                color: var(--text-primary);
+                background: var(--background-modifier-hover);
+            }
+
+            .avia-fav-item-del svg {
+                display: block;
+                width: 16px;
+                height: 16px;
+                flex-shrink: 0;
             }
 
             .avia-fav-item-use {
@@ -146,13 +187,6 @@
 
             .avia-fav-item-use:hover {
                 background: var(--background-modifier-hover, rgba(255,255,255,0.18));
-            }
-
-            .avia-fav-item-del {
-                position: absolute;
-                top: 50%;
-                right: 8px;
-                transform: translateY(-50%);
             }
 
             .avia-fav-empty {
@@ -231,7 +265,7 @@
                 item.className = "avia-fav-item";
 
                 const display = document.createElement("div");
-                display.className = "avia-fav-item-display FormSurface.module__surface___OS1LcU FormInput.module__input___STEwc0 FormInput.module__minHeight___STEwc0 FormInput.module__focusable___STEwc0";
+                display.className = "avia-fav-item-display";
 
                 const textDisplay = document.createElement("span");
                 textDisplay.className = "avia-fav-item-text";
@@ -239,7 +273,7 @@
 
                 const remove = document.createElement("button");
                 remove.type = "button";
-                remove.className = "avia-fav-item-del CustomStatusModal.module__clearButtonIcon___ZXZDTF";
+                remove.className = "avia-fav-item-del";
                 remove.setAttribute("aria-label", "Remove favorite");
 
                 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -248,7 +282,6 @@
                 svg.setAttribute("height", "16");
                 svg.setAttribute("fill", "currentColor");
                 svg.setAttribute("viewBox", "0 0 256 256");
-                svg.dataset.flx = "user.custom-status-modal.x-icon";
 
                 const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 path.setAttribute("d", "M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z");
