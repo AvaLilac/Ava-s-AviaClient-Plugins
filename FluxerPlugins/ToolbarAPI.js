@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/FluxerPlugins/ToolbarAPI.js
+  @VERSION: 1.1
+*/
+
 (function () {
 
     if (window.__AVIA_TOOLBAR__) return;
@@ -330,6 +335,60 @@
             document
                 .querySelectorAll(`[data-avia-toolbar-id="${CSS.escape(id)}"]`)
                 .forEach(button => button.remove());
+        },
+
+        update(item) {
+            if (!item || typeof item.id !== "string") {
+                console.error(
+                    "[AviaToolbar] update: item.id must be a string, got",
+                    item && item.id
+                );
+                return;
+            }
+
+            const id = item.id.trim();
+
+            const registered = toolbarRegisteredItems.find(
+                i => i.id === id
+            );
+
+            if (!registered) {
+                console.error(
+                    "[AviaToolbar] update: id '%s' is not registered",
+                    id
+                );
+                return;
+            }
+
+            const hasName = "name" in item;
+            const hasIcon = "icon" in item;
+
+            if (hasName && (typeof item.name !== "string" || !item.name.trim())) {
+                console.error(
+                    "[AviaToolbar] update: item.name must be a non-empty string, got",
+                    item.name
+                );
+                return;
+            }
+
+            if (hasName) {
+                registered.name = item.name;
+            }
+
+            if (hasIcon) {
+                registered.icon =
+                    typeof item.icon === "string" && item.icon.trim()
+                        ? item.icon.trim()
+                        : null;
+            }
+
+            hideTooltip();
+
+            document
+                .querySelectorAll(`[data-avia-toolbar-id="${CSS.escape(id)}"]`)
+                .forEach(button => button.remove());
+
+            renderItems();
         }
     };
 
