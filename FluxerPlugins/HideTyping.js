@@ -78,14 +78,14 @@
 
     const update = () => {
         window.AviaToolbar.update({
-            id: "avia_hide_typing",
+            id: "hide_typing",
             name: enabled ? "Typing Indicator Disabled" : "Typing Indicator Enabled",
             icon: enabled ? "x_circle" : "check_circle"
         });
     };
 
     window.AviaToolbar.register({
-        id: "avia_hide_typing",
+        id: "hide_typing",
         name: enabled ? "Typing Indicator Disabled" : "Typing Indicator Enabled",
         icon: enabled ? "x_circle" : "check_circle",
         onClick: () => {
