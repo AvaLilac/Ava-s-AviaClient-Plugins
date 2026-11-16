@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/FluxerPlugins/DisableConsoleWarning.js
+  @VERSION: 1.0
+*/
+
 (() => {
     if (window.__DisableConsoleWarning) return;
     window.__DisableConsoleWarning = true;
