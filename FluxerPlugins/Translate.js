@@ -1,3 +1,8 @@
+/*
+  @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/FluxerPlugins/Translate.js
+  @VERSION: 1.1
+*/
+
 (function() {
     if (window.__AVIA_TRANSLATE__) return;
     window.__AVIA_TRANSLATE__ = true;
@@ -539,13 +544,13 @@
         const searchField = document.createElement("div");
         searchField.className = "field";
 
-        const searchLabel = document.createElement("label");
+        const searchLabel = document.createElement("div");
         searchLabel.className = "label";
-        searchLabel.htmlFor = "avia-translate-search";
         searchLabel.textContent = "Language";
 
         const search = document.createElement("input");
         search.id = "avia-translate-search";
+        search.setAttribute("aria-label", "Language");
         search.className = "input";
         search.type = "text";
         search.placeholder = "Search language...";
@@ -593,6 +598,18 @@
             empty.classList.toggle("visible", visible === 0);
         });
 
+        search.addEventListener("paste", (e) => {
+            if (!e.defaultPrevented) return;
+            const text = (e.clipboardData?.getData("text/plain") || "").replace(/[\r\n]+/g, " ").trim();
+            if (!text) return;
+            const start = search.selectionStart ?? search.value.length;
+            const end = search.selectionEnd ?? search.value.length;
+            search.setRangeText(text, start, end, "end");
+            search.dispatchEvent(new Event("input", {
+                bubbles: true
+            }));
+        });
+
         body.appendChild(searchField);
         body.appendChild(group);
         body.appendChild(empty);
@@ -616,6 +633,10 @@
                 event.preventDefault();
                 closeTranslateModal();
             }
+        });
+
+        ["paste", "copy", "cut", "keyup", "keypress"].forEach((type) => {
+            host.addEventListener(type, (event) => event.stopPropagation());
         });
 
         document.body.appendChild(host);
