@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/FluxerPlugins/Translate.js
-  @VERSION: 1.2
+  @VERSION: 1.3
 */
 
 (function() {
@@ -666,153 +666,41 @@
         setTimeout(() => clearInterval(wait), 15000);
     }
 
-    const TT_CHILD_STYLE = `
-  --tooltip-active-surface: var(--tooltip-surface);
-  --tooltip-active-border-color: var(--tooltip-border-color);
-  transform-origin: 50% 100%;
-  --tooltip-surface: var(--settings-surface-background,var(--form-surface-background));
-  --tooltip-border-width: .0625rem;
-  --tooltip-border-color: var(--settings-border-color,var(--background-modifier-accent));
-  --tooltip-shadow: 0 .5rem 1rem rgba(0,0,0,.22);
-  --tooltip-pointer-surface: var(--tooltip-active-surface);
-  --tooltip-pointer-border: var(--tooltip-active-border-color);
-  --tooltip-pointer-size: .625rem;
-  --tooltip-pointer-half-size: calc(var(--tooltip-pointer-size) / 2);
-  z-index: var(--z-index-tooltip);
-  pointer-events: none;
-  box-sizing: border-box;
-  border: var(--tooltip-border-width) solid var(--tooltip-active-border-color);
-  background: var(--tooltip-active-surface);
-  color: var(--text-primary);
-  word-wrap: break-word;
-  box-shadow: var(--tooltip-shadow);
-  border-radius: .5rem;
-  font-size: .8125rem;
-  font-weight: 500;
-  line-height: 1.125rem;
-  position: relative;
-  max-width: 21.875rem;
-`;
-
-    const TT_POINTER_1_STYLE = `
-  -webkit-clip-path: polygon(100% 0,100% 100%,0 100%);
-  clip-path: polygon(100% 0,100% 100%,0 100%);
-  box-sizing: border-box;
-  width: var(--tooltip-pointer-size);
-  height: var(--tooltip-pointer-size);
-  background: var(--tooltip-pointer-border);
-  border: 0;
-  display: block;
-  transform: rotate(45deg);
-  top: calc(100% - var(--tooltip-pointer-half-size));
-  margin-left: calc(-1 * var(--tooltip-pointer-half-size));
-  position: absolute;
-  left: 50%;
-  pointer-events: none;
-`;
-
-    const TT_POINTER_2_STYLE = `
-  top: calc(100% - var(--tooltip-pointer-half-size));
-  margin-left: calc(-1 * var(--tooltip-pointer-half-size));
-  position: absolute;
-  left: 50%;
-  pointer-events: none;
-`;
-
-    const TT_CONTENT_STYLE = `
-  white-space: normal;
-  word-break: break-word;
-  text-align: center;
-  padding: .4375rem .625rem;
-  overflow: hidden;
-`;
-
-    const TT_ROOT_ID = "avia-translate-tooltip-root";
-    let ttAnchor = null;
-    let ttWatch = null;
-
-    function hideTooltip() {
-        if (ttWatch) {
-            clearInterval(ttWatch);
-            ttWatch = null;
-        }
-        ttAnchor = null;
-        document.getElementById(TT_ROOT_ID)?.remove();
-    }
-
-    function showTooltip(text, anchor) {
-        hideTooltip();
-
-        const root = document.createElement("div");
-        root.id = TT_ROOT_ID;
-        root.style.cssText = `
-        pointer-events: none;
-        z-index: var(--z-index-tooltip);
-        background: 0 0;
-        position: fixed;
-        top: 0; bottom: 0; left: 0; right: 0;
-    `;
-
-        root.innerHTML = `
-      <div data-floating-ui-portal="">
-        <div role="tooltip" data-avia-tooltip="true" style="position: fixed; left: 0px; top: 0px; z-index: var(--z-index-tooltip); visibility: hidden; opacity: 1; transform: none;">
-          <div style="${TT_CHILD_STYLE}">
-            <div data-avia-tt="p1" style="${TT_POINTER_1_STYLE}"></div>
-            <div data-avia-tt="p2" style="${TT_POINTER_2_STYLE}"></div>
-            <div data-avia-tt="content" style="${TT_CONTENT_STYLE}"></div>
-          </div>
-        </div>
-      </div>
-    `;
-
-        root.querySelector('[data-avia-tt="content"]').textContent = text;
-        document.body.appendChild(root);
-
-        const tooltip = root.querySelector('[data-avia-tooltip]');
-        const p1 = root.querySelector('[data-avia-tt="p1"]');
-        const p2 = root.querySelector('[data-avia-tt="p2"]');
-
-        const rect = anchor.getBoundingClientRect();
-        const w = tooltip.offsetWidth;
-        const h = tooltip.offsetHeight;
-
-        const left = Math.max(8, Math.min(
-            rect.left + rect.width / 2 - w / 2,
-            window.innerWidth - w - 8
-        ));
-
-        tooltip.style.left = `${left}px`;
-        tooltip.style.top = `${rect.top - h - 8}px`;
-        tooltip.style.visibility = "visible";
-
-        const pointerLeft = rect.left + rect.width / 2 - left;
-        p1.style.left = `${pointerLeft}px`;
-        p2.style.left = `${pointerLeft}px`;
-
-        ttAnchor = anchor;
-        ttWatch = setInterval(() => {
-            const r = ttAnchor?.getBoundingClientRect();
-            if (!ttAnchor || !ttAnchor.isConnected || !r || (r.width === 0 && r.height === 0)) {
-                hideTooltip();
-            }
-        }, 150);
-    }
-
-    window.addEventListener("blur", hideTooltip);
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") hideTooltip();
-    });
-
-    const SEL_ACTION_BAR = '[data-flx="channel.message-action-bar.message-action-bar-core.action-bar"]';
-    const SEL_MESSAGE = '[role="article"][data-message-id]';
     const SEL_MSG_TEXT = '[data-search-highlight-scope="message"]';
-    const SEL_MORE_ICON = 'svg[data-flx*="more-icon"]';
-    const SEL_DELETE_ICON = 'svg[data-flx*="delete-icon"]';
-    const SEL_DANGER = '[class*="MessageActionBar.module__danger"]';
 
+    const ACTION_MENU_ID = "avia_translate_message";
     const TRANSLATE_TOOLTIP_TEXT = "Translate Message";
+    const ICON_VIEWBOX = "0 0 24 24";
 
     const TRANSLATE_ICON_PATH = "M11.9,22l4.55-12h2.1L23.1,22H21l-1.07-3.05H15.08L14,22H11.9ZM4,19L2.6,17.6l5.05-5.05q-0.88-0.88-1.59-2T4.75,8h2.1q0.5 0.97 1 1.7t1.2 1.45q0.82-0.82 1.71-2.31T12.1,6H1V4H8V2h2V4h7V6H14.1q-0.53,1.8-1.58,3.7t-2.07,2.9l2.4,2.45L12.1,17.1L9.05,13.98L4,19Zm11.7-1.8h3.6l-1.8-5.1l-1.8,5.1Z";
+
+    const PENDING_ICON_PATH = "M8.06,13.06Q8.5,12.63 8.5,12T8.06,10.94T7,10.5T5.94,10.94T5.5,12t0.44,1.06T7,13.5t1.06-0.44Zm5,0Q13.5,12.63 13.5,12t-0.44-1.06T12,10.5t-1.06,0.44T10.5,12t0.44,1.06T12,13.5t1.06-0.44Zm5,0Q18.5,12.63 18.5,12t-0.44-1.06T17,10.5t-1.06,0.44T15.5,12t0.44,1.06T17,13.5t1.06-0.44ZM12,22q-2.07,0-3.9-0.79q-1.82-0.79-3.17-2.14Q3.58,17.73 2.79,15.9T2,12Q2,9.92 2.79,8.1Q3.58,6.27 4.93,4.93Q6.28,3.57 8.1,2.79Q9.93,2 12,2t3.9,0.79t3.17,2.14q1.35,1.35 2.14,3.17Q22,9.92 22,12t-0.79,3.9t-2.14,3.17q-1.35,1.35-3.17,2.14T12,22Zm0-2q3.35,0 5.68-2.32T20,12T17.68,6.32T12,4T6.33,6.32T4,12t2.33,5.68T12,20Zm0-8Z";
+
+    let pendingCount = 0;
+
+    function setActionMenuIcon(path) {
+        window.AviaActionMenu?.update?.({
+            id: ACTION_MENU_ID,
+            name: TRANSLATE_TOOLTIP_TEXT,
+            svg: path,
+            viewBox: ICON_VIEWBOX
+        });
+    }
+
+    function startPending() {
+        pendingCount++;
+        if (pendingCount === 1) setActionMenuIcon(PENDING_ICON_PATH);
+    }
+
+    function endPending() {
+        pendingCount = Math.max(0, pendingCount - 1);
+        if (pendingCount === 0) setActionMenuIcon(TRANSLATE_ICON_PATH);
+    }
+
+    function findMessageById(messageId) {
+        if (!messageId) return null;
+        return document.querySelector(`[role="article"][data-message-id="${CSS.escape(String(messageId))}"]`);
+    }
 
     function getMessageText(message) {
         const markup = message.querySelector(SEL_MSG_TEXT);
@@ -843,12 +731,8 @@
         markup.insertAdjacentElement("afterend", block);
     }
 
-    async function onTranslateClick(btn, bar, e) {
-        e.stopPropagation();
-        e.preventDefault();
-        hideTooltip();
-
-        const message = bar.closest(SEL_MESSAGE);
+    async function translateMessage(messageId) {
+        const message = findMessageById(messageId);
         if (!message) return;
 
         const existing = message.querySelector(".avia-inline-translation");
@@ -868,9 +752,13 @@
             return;
         }
 
-        btn.style.opacity = "0.4";
-        const result = await translateWithDetect(text, TARGET_LANG);
-        btn.style.opacity = "1";
+        startPending();
+        let result = null;
+        try {
+            result = await translateWithDetect(text, TARGET_LANG);
+        } finally {
+            endPending();
+        }
 
         if (!result) return;
 
@@ -883,72 +771,28 @@
         insertTranslationBlock(markup, result.translated + " - Translated from " + detectedName);
     }
 
-    function isDangerButton(el) {
-        return el.matches(SEL_DANGER) || !!el.querySelector(SEL_DELETE_ICON);
+    function registerActionMenuButton() {
+        window.AviaActionMenu.register({
+            id: ACTION_MENU_ID,
+            name: TRANSLATE_TOOLTIP_TEXT,
+            svg: TRANSLATE_ICON_PATH,
+            viewBox: ICON_VIEWBOX,
+            onClick: ({
+                messageId
+            }) => translateMessage(messageId)
+        });
     }
 
-    function findRefButton(bar) {
-        const more = bar.querySelector(SEL_MORE_ICON)?.closest("button");
-        if (more && !isDangerButton(more)) return more;
-
-        const buttons = [...bar.querySelectorAll(":scope > button")].reverse();
-        return buttons.find(b => b.querySelector("svg") && !isDangerButton(b)) || null;
-    }
-
-    function findInsertAnchor(bar) {
-        return [...bar.children].find(el => el.querySelector(SEL_MORE_ICON) || isDangerButton(el)) || null;
-    }
-
-    function injectToolbarTranslate() {
-        if (ttAnchor && !ttAnchor.isConnected) hideTooltip();
-
-        document.querySelectorAll(SEL_ACTION_BAR).forEach(bar => {
-
-            if (bar.querySelector("[data-avia-translate]")) return;
-
-            const refBtn = findRefButton(bar);
-            if (!refBtn) return;
-
-            const btn = refBtn.cloneNode(true);
-            btn.setAttribute("data-avia-translate", "true");
-            btn.setAttribute("aria-label", TRANSLATE_TOOLTIP_TEXT);
-            btn.removeAttribute("data-action");
-            btn.removeAttribute("data-flx");
-
-            const svg = btn.querySelector("svg");
-            if (svg) {
-                svg.setAttribute("viewBox", "0 0 24 24");
-                svg.removeAttribute("class");
-                svg.innerHTML = `<path d="${TRANSLATE_ICON_PATH}"></path>`;
+    if (window.AviaActionMenu?.register) {
+        registerActionMenuButton();
+    } else {
+        const waitActionMenu = setInterval(() => {
+            if (window.AviaActionMenu?.register) {
+                clearInterval(waitActionMenu);
+                registerActionMenuButton();
             }
-
-            btn.addEventListener("click", (e) => onTranslateClick(btn, bar, e));
-            btn.addEventListener("mouseenter", () => showTooltip(TRANSLATE_TOOLTIP_TEXT, btn));
-            btn.addEventListener("mouseleave", hideTooltip);
-
-            const anchor = findInsertAnchor(bar);
-            if (anchor) bar.insertBefore(btn, anchor);
-            else bar.appendChild(btn);
-        });
+        }, 250);
+        setTimeout(() => clearInterval(waitActionMenu), 15000);
     }
-
-    let injectScheduled = false;
-
-    function scheduleInject() {
-        if (injectScheduled) return;
-        injectScheduled = true;
-        requestAnimationFrame(() => {
-            injectScheduled = false;
-            injectToolbarTranslate();
-        });
-    }
-
-    new MutationObserver(scheduleInject)
-        .observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-
-    injectToolbarTranslate();
 
 })();
