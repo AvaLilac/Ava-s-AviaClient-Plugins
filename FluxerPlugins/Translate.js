@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/FluxerPlugins/Translate.js
-  @VERSION: 1.1
+  @VERSION: 1.2
 */
 
 (function() {
@@ -806,7 +806,9 @@
     const SEL_ACTION_BAR = '[data-flx="channel.message-action-bar.message-action-bar-core.action-bar"]';
     const SEL_MESSAGE = '[role="article"][data-message-id]';
     const SEL_MSG_TEXT = '[data-search-highlight-scope="message"]';
-    const SEL_BAR_ITEM = '[class*="ActionToolbar.module__item"]';
+    const SEL_MORE_ICON = 'svg[data-flx*="more-icon"]';
+    const SEL_DELETE_ICON = 'svg[data-flx*="delete-icon"]';
+    const SEL_DANGER = '[class*="MessageActionBar.module__danger"]';
 
     const TRANSLATE_TOOLTIP_TEXT = "Translate Message";
 
@@ -881,6 +883,22 @@
         insertTranslationBlock(markup, result.translated + " - Translated from " + detectedName);
     }
 
+    function isDangerButton(el) {
+        return el.matches(SEL_DANGER) || !!el.querySelector(SEL_DELETE_ICON);
+    }
+
+    function findRefButton(bar) {
+        const more = bar.querySelector(SEL_MORE_ICON)?.closest("button");
+        if (more && !isDangerButton(more)) return more;
+
+        const buttons = [...bar.querySelectorAll(":scope > button")].reverse();
+        return buttons.find(b => b.querySelector("svg") && !isDangerButton(b)) || null;
+    }
+
+    function findInsertAnchor(bar) {
+        return [...bar.children].find(el => el.querySelector(SEL_MORE_ICON) || isDangerButton(el)) || null;
+    }
+
     function injectToolbarTranslate() {
         if (ttAnchor && !ttAnchor.isConnected) hideTooltip();
 
@@ -888,10 +906,7 @@
 
             if (bar.querySelector("[data-avia-translate]")) return;
 
-            const refBtn =
-                bar.querySelector('button[aria-label="Forward"]') ||
-                bar.querySelector('button[aria-label="Create thread"]') ||
-                bar.querySelector(`button${SEL_BAR_ITEM}:not([aria-label^="React with"])`);
+            const refBtn = findRefButton(bar);
             if (!refBtn) return;
 
             const btn = refBtn.cloneNode(true);
@@ -911,9 +926,8 @@
             btn.addEventListener("mouseenter", () => showTooltip(TRANSLATE_TOOLTIP_TEXT, btn));
             btn.addEventListener("mouseleave", hideTooltip);
 
-
-            const moreBtn = bar.querySelector('button[aria-label="More"]');
-            if (moreBtn) bar.insertBefore(btn, moreBtn);
+            const anchor = findInsertAnchor(bar);
+            if (anchor) bar.insertBefore(btn, anchor);
             else bar.appendChild(btn);
         });
     }
