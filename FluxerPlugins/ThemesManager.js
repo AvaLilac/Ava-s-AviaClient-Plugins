@@ -1,7 +1,7 @@
 (function () {
 
-    if (window.__AVIA_THEMES__) return;
-    window.__AVIA_THEMES__ = true;
+    if (window.__AVIA_THEMES_LEGACY__) return;
+    window.__AVIA_THEMES_LEGACY__ = true;
 
     const STORAGE_KEY = "avia_themes";
     let editingThemeId = null;
@@ -529,12 +529,12 @@
 
     function registerWithAviaMenu() {
         if (window.AviaMenu) {
-            window.AviaMenu.register({ id: "avia_themes", name: "Themes", icon: "palette", onClick: toggleThemesPanel });
+            window.AviaMenu.register({ id: "avia_themes_legacy", name: "Themes Legacy", icon: "palette", onClick: toggleThemesPanel });
         } else {
             const interval = setInterval(() => {
                 if (window.AviaMenu) {
                     clearInterval(interval);
-                    window.AviaMenu.register({ id: "avia_themes", name: "Themes", icon: "palette", onClick: toggleThemesPanel });
+                    window.AviaMenu.register({ id: "avia_themes_legacy", name: "Themes Legacy", icon: "palette", onClick: toggleThemesPanel });
                 }
             }, 100);
         }
@@ -542,12 +542,12 @@
 
     function registerWithAviaCategory() {
         if (window.AviaCategory) {
-            window.AviaCategory.register({ id: "avia_themes", name: "Themes", icon: "palette", onClick: toggleThemesPanel });
+            window.AviaCategory.register({ id: "avia_themes_legacy", name: "Themes Legacy", icon: "palette", onClick: toggleThemesPanel });
         } else {
             const interval = setInterval(() => {
                 if (window.AviaCategory) {
                     clearInterval(interval);
-                    window.AviaCategory.register({ id: "avia_themes", name: "Themes", icon: "palette", onClick: toggleThemesPanel });
+                    window.AviaCategory.register({ id: "avia_themes_legacy", name: "Themes Legacy", icon: "palette", onClick: toggleThemesPanel });
                 }
             }, 100);
         }
