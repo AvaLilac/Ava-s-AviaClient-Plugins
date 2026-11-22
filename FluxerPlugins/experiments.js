@@ -1,6 +1,6 @@
 /*
   @UPDATEURL: https://codeberg.org/AvaLilac/Ava-s-AviaClient-Plugins/raw/branch/main/FluxerPlugins/experiments.js
-  @VERSION: 1.0
+  @VERSION: 1.1
 */
 
 (function() {
@@ -58,6 +58,16 @@
     const menuItems = new Set();
     let latestAssignments = {};
 
+    const unregisterExperiments = () => {
+        for (const name of menuItems) {
+            window.AviaMenu?.unregister?.({
+                id: `avia-experiment-${name}`
+            });
+        }
+
+        menuItems.clear();
+    };
+
     const updateMenuItem = (name, experiment) => {
         const enabled = getEnabled(experiment);
 
@@ -74,32 +84,28 @@
 
         const id = `avia-experiment-${name}`;
 
-        if (!menuItems.has(name)) {
-            window.AviaMenu.submenu({
-                parent: PARENT_ID,
-                id,
-                name,
-                icon: getEnabled(experiment) ? "check_circle" : "x_circle",
-                onClick: () => {
-                    const current = latestAssignments[name];
-                    const flag = getFlagKey(current);
+        window.AviaMenu.submenu({
+            parent: PARENT_ID,
+            id,
+            name,
+            icon: getEnabled(experiment) ? "check_circle" : "x_circle",
+            onClick: () => {
+                const current = latestAssignments[name];
+                const flag = getFlagKey(current);
 
-                    if (!flag) return;
+                if (!flag) return;
 
-                    const nextValue = !getEnabled(current);
+                const nextValue = !getEnabled(current);
 
-                    overrides[name] = nextValue;
-                    saveOverrides();
+                overrides[name] = nextValue;
+                saveOverrides();
 
-                    current[flag] = nextValue;
-                    updateMenuItem(name, current);
-                }
-            });
+                current[flag] = nextValue;
+                updateMenuItem(name, current);
+            }
+        });
 
-            menuItems.add(name);
-        } else {
-            updateMenuItem(name, experiment);
-        }
+        menuItems.add(name);
     };
 
     const resetExperiments = () => {
@@ -117,6 +123,8 @@
     const modifyExperiments = (data) => {
         if (!data || typeof data !== "object") return data;
         if (!data.assignments || typeof data.assignments !== "object") return data;
+
+        unregisterExperiments();
 
         latestAssignments = data.assignments;
 
