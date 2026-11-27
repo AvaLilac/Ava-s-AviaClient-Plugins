@@ -12,50 +12,29 @@
     const ICON_VIEWBOX = "0 0 24 24";
     const EXPORT_ICON_PATH = "M12,12ZM5.05,22.38l-1.4-1.43L6.6,18H4.35V16H10v5.65H8V19.43L5.05,22.38ZM12,22V20h6V9H13V4H6V14H4V4Q4,3.17 4.59,2.59T6,2h8l6,6V20q0,0.82-0.59,1.41T18,22H12Z";
 
-    async function getApiBase() {
-        const entries = performance.getEntriesByType("resource");
+    function getApiBase() {
+        const activeAccountKey = localStorage.getItem("fluxer:auth:active-account-key");
 
-        for (let i = entries.length - 1; i >= 0; i--) {
-            const url = entries[i].name;
-
-            const proxyMatch = url.match(
-                /^fluxer-app:\/\/app\/api\/(https?%3A%2F%2F.+?)\/v\d+\//i
-            );
-
-            if (proxyMatch) {
-                return decodeURIComponent(proxyMatch[1]).replace(/\/+$/, "");
-            }
-
-            const directMatch = url.match(
-                /^(https?:\/\/.+?)\/v\d+\//i
-            );
-
-            if (directMatch && directMatch[1].includes("/api")) {
-                return directMatch[1].replace(/\/+$/, "");
-            }
+        if (!activeAccountKey) {
+            throw new Error("Could not find the active Fluxer account.");
         }
 
-        if (location.protocol === "http:" || location.protocol === "https:") {
-            const response = await fetch(
-                `${location.origin}/.well-known/fluxer`
-            );
+        const separator = activeAccountKey.lastIndexOf("::");
 
-            if (!response.ok) {
-                throw new Error("Could not retrieve the Fluxer instance configuration.");
-            }
-
-            const config = await response.json();
-            const apiBase = config.endpoints?.api;
-
-            if (apiBase) {
-                return apiBase.replace(/\/+$/, "");
-            }
+        if (separator === -1) {
+            throw new Error("Invalid active account configuration.");
         }
 
-        throw new Error("Could not detect the Fluxer API address.");
+        const apiBase = activeAccountKey.slice(0, separator).trim();
+
+        if (!/^https?:\/\/.+\/api\/?$/i.test(apiBase)) {
+            throw new Error("Invalid Fluxer API address.");
+        }
+
+        return apiBase.replace(/\/+$/, "");
     }
 
-    function getMessageElement(messageId) {
+    function getMessageInfo(messageId) {
         const elements = document.querySelectorAll("[data-message-id]");
 
         for (const element of elements) {
@@ -66,7 +45,6 @@
 
                 if (channelId) {
                     return {
-                        element,
                         channelId
                     };
                 }
@@ -78,7 +56,7 @@
 
     async function downloadMessage(messageId) {
         try {
-            const messageInfo = getMessageElement(messageId);
+            const messageInfo = getMessageInfo(messageId);
 
             if (!messageInfo) {
                 throw new Error("Could not find the message in the current channel.");
@@ -90,15 +68,11 @@
                 throw new Error("Could not find your Fluxer auth token. Which is required to fetch the Message Via the Fluxer API");
             }
 
-            const apiBase = await getApiBase();
-            const {
-                channelId
-            } = messageInfo;
-
+            const apiBase = getApiBase();
             const endpoint =
-                `/v1/channels/${channelId}/messages/${messageId}`;
+                `/v1/channels/${messageInfo.channelId}/messages/${messageId}`;
 
-            const requestUrl = location.protocol === "fluxer:" ?
+            const requestUrl = location.protocol === "fluxer-app:" ?
                 `fluxer-app://app/api/${encodeURIComponent(apiBase)}${endpoint}` :
                 `${apiBase}${endpoint}`;
 
